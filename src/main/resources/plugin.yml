@@ -1,0 +1,7 @@
+name: EldenRhym
+version: '${version}'
+main: com.ravingarinc.eldenrhym.EldenRhym
+api-version: 1.18
+depend: [ MMOItems, MythicLib ]
+authors: [ RAVINGAR ]
+description: Feature plugin for EldenRhym server

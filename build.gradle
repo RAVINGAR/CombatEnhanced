@@ -1,0 +1,125 @@
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+
+plugins {
+    id 'java-library'
+    id 'pmd'
+}
+
+group = 'com.ravingarinc'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    gradlePluginPortal()
+    mavenCentral()
+    maven {
+        name = 'spigotmc-repo'
+        url = 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/'
+        content {
+            includeGroup 'org.spigotmc'
+        }
+    }
+    maven {
+        name = 'sonatype'
+        url = 'https://oss.sonatype.org/content/groups/public/'
+    }
+
+    maven {
+        name 'phoenix-repo'
+        url 'https://nexus.phoenixdvpt.fr/repository/maven-public/'
+        content {
+            includeGroup 'io.lumine'
+            includeGroup 'net.Indyuce'
+        }
+    }
+}
+
+dependencies {
+    implementation 'org.jetbrains:annotations:23.0.0'
+    compileOnly 'org.spigotmc:spigot-api:1.18.2-R0.1-SNAPSHOT'
+    compileOnly 'net.Indyuce:MMOItems-API:6.8.3-SNAPSHOT'
+    compileOnly 'io.lumine:MythicLib-dist:1.4.2-SNAPSHOT'
+    testImplementation 'org.jetbrains:annotations:23.0.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0'
+}
+
+def targetJavaVersion = 17
+java {
+    def javaVersion = JavaVersion.toVersion(targetJavaVersion)
+    sourceCompatibility = javaVersion
+    targetCompatibility = javaVersion
+    if (JavaVersion.current() < javaVersion) {
+        toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    if (targetJavaVersion >= 10 || JavaVersion.current().isJava10Compatible()) {
+        options.release = targetJavaVersion
+    }
+}
+
+javadoc {
+    options.encoding 'UTF-8'
+    options.charSet 'UTF-8'
+    options.jFlags('-Xms256m', '-Xmx512m')
+    options.addStringOption('Xdoclint:none', '-quiet')
+    options.links(
+            'https://hub.spigotmc.org/javadocs/spigot/',
+            'http://google.github.io/guava/releases/17.0/api/docs/'
+    )
+}
+
+pmd {
+    consoleOutput = true
+    toolVersion = '6.41.0'
+    rulesMinimumPriority = 5
+    ruleSets = []
+    ruleSetFiles = files('pmd-rules.xml')
+}
+
+int nTests = 0
+
+test {
+    useJUnitPlatform()
+    // Ensure testing is never 'up-to-date' (in Gradle-speak), which means it can never be skipped,
+    // as it would otherwise be.
+    outputs.upToDateWhen { false }
+
+    // Ensure we get all the useful test output.
+    testLogging {
+        events 'failed', 'passed', 'skipped'
+        showExceptions true
+        showCauses true
+        showStackTraces true
+        showStandardStreams true
+        exceptionFormat TestExceptionFormat.FULL
+    }
+    // Count the number of tests actually executed, for later...
+    afterTest {
+        nTests += 1
+    }
+}
+
+// This ensures we actually get an error message if there are no tests found. Otherwise, Gradle
+// wouldn't consider this an error, and will simply report "BUILD SUCCESSFUL".
+task(verifyTestExistence) {
+    dependsOn test
+    doLast {
+        if(nTests == 0)
+        {
+            println("No tests found!\nMake sure your test code is in the same directory as 'unittest', "
+                    + "and uses '@RunWith' and '@Test' as required by JUnit.")
+            throw new InvalidUserDataException("No tests found")
+        }
+    }
+}
+
+processResources {
+    def props = [version: version]
+    inputs.properties props
+    filteringCharset 'UTF-8'
+    filesMatching('plugin.yml') {
+        expand props
+    }
+}
