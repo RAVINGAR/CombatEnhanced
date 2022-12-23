@@ -13,15 +13,14 @@ import java.util.logging.Level;
 public class ConfigManager extends Manager {
     private final ConfigFile configFile;
 
-    protected ConfigManager(final EldenRhym plugin) {
+    public ConfigManager(final EldenRhym plugin) {
         super(ConfigManager.class, plugin);
         this.configFile = new ConfigFile(plugin, "config.yml");
     }
 
     @Override
-    public void load() {
+    protected void load() {
         loadCombatSettings();
-        super.load();
     }
 
     private void loadCombatSettings() {
@@ -92,9 +91,8 @@ public class ConfigManager extends Manager {
     }
 
     @Override
-    public void reload() {
+    protected void reload() {
         this.configFile.reloadConfig();
-        load();
     }
 
     @Override

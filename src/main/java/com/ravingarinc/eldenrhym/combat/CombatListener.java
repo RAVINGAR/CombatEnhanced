@@ -1,11 +1,12 @@
 package com.ravingarinc.eldenrhym.combat;
 
+import com.ravingarinc.eldenrhym.EldenRhym;
+import com.ravingarinc.eldenrhym.api.DependentListener;
 import net.Indyuce.mmoitems.api.player.PlayerData;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
@@ -14,11 +15,12 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.UUID;
 
-public class CombatListener implements Listener {
+public class CombatListener extends DependentListener {
     private final CombatManager manager;
 
-    public CombatListener(final CombatManager manager) {
-        this.manager = manager;
+    public CombatListener(final EldenRhym plugin) {
+        super(CombatListener.class, plugin, CombatManager.class);
+        this.manager = plugin.getManager(CombatManager.class);
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -40,6 +42,7 @@ public class CombatListener implements Listener {
         if (player.getVelocity().getY() > 0) {
             return true;
         }
+
         final Location location = player.getLocation();
         return location.getWorld().getBlockAt(location.subtract(0, -1, 0)).getType().isAir();
     }

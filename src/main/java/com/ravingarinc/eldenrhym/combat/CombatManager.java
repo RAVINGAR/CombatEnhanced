@@ -76,16 +76,14 @@ public class CombatManager extends Manager {
 
 
     @Override
-    public void reload() {
+    protected void reload() {
         runner.cancel();
         dodgeRunner.cancel();
         blockRunner.cancel();
-
-        load();
     }
 
     @Override
-    public void load() {
+    protected void load() {
         runner = new CombatRunner();
         dodgeRunner = new IdentifierRunner<>();
         blockRunner = new IdentifierRunner<>();
@@ -93,7 +91,6 @@ public class CombatManager extends Manager {
         runner.runTaskTimerAsynchronously(plugin, 0, PERIOD);
         dodgeRunner.runTaskTimerAsynchronously(plugin, 5, PERIOD);
         blockRunner.runTaskTimerAsynchronously(plugin, 5, PERIOD);
-        super.load();
     }
 
     @Override

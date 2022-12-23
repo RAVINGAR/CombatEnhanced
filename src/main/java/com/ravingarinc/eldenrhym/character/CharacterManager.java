@@ -17,7 +17,7 @@ public class CharacterManager extends Manager {
     private final Map<UUID, CharacterPlayer> playerMap;
     private final Map<UUID, CharacterMonster> monsterMap;
 
-    protected CharacterManager(final EldenRhym plugin) {
+    public CharacterManager(final EldenRhym plugin) {
         super(CharacterManager.class, plugin);
         this.playerMap = new HashMap<>();
         this.monsterMap = new HashMap<>();
@@ -78,7 +78,12 @@ public class CharacterManager extends Manager {
     }
 
     @Override
-    public void reload() {
+    protected void reload() {
+
+    }
+
+    @Override
+    protected void load() {
 
     }
 

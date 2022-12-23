@@ -1,6 +1,9 @@
 package com.ravingarinc.eldenrhym;
 
 import com.ravingarinc.eldenrhym.api.Manager;
+import com.ravingarinc.eldenrhym.api.ManagerLoadException;
+import com.ravingarinc.eldenrhym.character.CharacterManager;
+import com.ravingarinc.eldenrhym.combat.CombatListener;
 import com.ravingarinc.eldenrhym.combat.CombatManager;
 import com.ravingarinc.eldenrhym.file.ConfigManager;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -16,6 +19,7 @@ import java.util.logging.Logger;
 public final class EldenRhym extends JavaPlugin {
     public static boolean debug;
     private static Logger logger;
+
     private List<Manager> managers;
 
     /**
@@ -59,20 +63,56 @@ public final class EldenRhym extends JavaPlugin {
     public void onEnable() {
         // Plugin startup logic
         loadManagers();
+        validateLoad();
     }
 
     private void loadManagers() {
         managers = new ArrayList<>();
 
+        // load managers
         addManager(ConfigManager.class);
         addManager(CombatManager.class);
+        addManager(CharacterManager.class);
+
+        // load listeners
+        addManager(CombatListener.class);
 
         Collections.sort(managers);
-        managers.forEach(Manager::load);
+
+        managers.forEach(manager -> {
+            try {
+                manager.initLoad();
+            } catch (final ManagerLoadException e) {
+                EldenRhym.log(Level.SEVERE, e.getMessage());
+            }
+        });
+    }
+
+    private void validateLoad() {
+        int loaded = 0;
+        for (final Manager manager : managers) {
+            if (manager.isLoaded()) {
+                loaded++;
+            }
+        }
+        final boolean success = loaded == managers.size();
+        EldenRhym.log(success ? Level.INFO : Level.WARNING,
+                loaded + "/" + managers.size() + " managers/listeners have been loaded! " +
+                        (success
+                                ? "EldenRhym has been loaded successfully with no issues!"
+                                : managers.size() - loaded + " of these could not be loaded, this may cause problems. Check your logs!"));
+
     }
 
     public void reload() {
-        managers.forEach(Manager::reload);
+        managers.forEach(manager -> {
+            try {
+                manager.initReload();
+            } catch (final ManagerLoadException e) {
+                EldenRhym.log(Level.SEVERE, e.getMessage());
+            }
+        });
+        validateLoad();
     }
 
     private <T extends Manager> void addManager(final Class<T> manager) {
