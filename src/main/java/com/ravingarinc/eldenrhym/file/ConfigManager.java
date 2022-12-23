@@ -1,7 +1,7 @@
 package com.ravingarinc.eldenrhym.file;
 
 import com.ravingarinc.eldenrhym.EldenRhym;
-import com.ravingarinc.eldenrhym.api.Manager;
+import com.ravingarinc.eldenrhym.api.Module;
 import com.ravingarinc.eldenrhym.combat.CombatManager;
 import org.bukkit.configuration.ConfigurationSection;
 
@@ -10,7 +10,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 
-public class ConfigManager extends Manager {
+public class ConfigManager extends Module {
     private final ConfigFile configFile;
 
     public ConfigManager(final EldenRhym plugin) {

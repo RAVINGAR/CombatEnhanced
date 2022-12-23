@@ -4,10 +4,10 @@ import com.ravingarinc.eldenrhym.EldenRhym;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 
-public class DependentListener extends Manager implements Listener {
+public class DependentListener extends Module implements Listener {
 
     @SafeVarargs
-    protected DependentListener(final Class<? extends Manager> identifier, final EldenRhym plugin, final Class<? extends Manager>... dependsOn) {
+    protected DependentListener(final Class<? extends Module> identifier, final EldenRhym plugin, final Class<? extends Module>... dependsOn) {
         super(identifier, plugin, dependsOn);
     }
 

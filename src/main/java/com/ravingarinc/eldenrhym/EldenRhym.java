@@ -1,26 +1,27 @@
 package com.ravingarinc.eldenrhym;
 
-import com.ravingarinc.eldenrhym.api.Manager;
 import com.ravingarinc.eldenrhym.api.ManagerLoadException;
+import com.ravingarinc.eldenrhym.api.Module;
 import com.ravingarinc.eldenrhym.character.CharacterManager;
 import com.ravingarinc.eldenrhym.combat.CombatListener;
 import com.ravingarinc.eldenrhym.combat.CombatManager;
 import com.ravingarinc.eldenrhym.file.ConfigManager;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public final class EldenRhym extends JavaPlugin {
     public static boolean debug;
     private static Logger logger;
 
-    private List<Manager> managers;
+    private Map<Class<? extends Module>, Module> modules;
 
     /**
      * Expects a message where %s will be replaced by the provided terms
@@ -30,11 +31,19 @@ public final class EldenRhym extends JavaPlugin {
      * @param replacements The replacements
      */
     public static void log(final Level level, final String message, final Object... replacements) {
+        log(level, message, null, replacements);
+    }
+
+    public static void log(final Level level, final String message, @Nullable final Throwable throwable, final Object... replacements) {
         String format = message;
-        for (int i = 0; i < replacements.length; i++) {
-            format = format.replaceAll("%s" + (i + 1), replacements[i].toString());
+        for (final Object replacement : replacements) {
+            format = format.replace("%s", replacement.toString());
         }
-        logger.log(level, message);
+        if (throwable == null) {
+            logger.log(level, format);
+        } else {
+            logger.log(level, format, throwable);
+        }
     }
 
     public static void log(final Level level, final String message, final Throwable throwable) {
@@ -62,24 +71,27 @@ public final class EldenRhym extends JavaPlugin {
     @Override
     public void onEnable() {
         // Plugin startup logic
-        loadManagers();
+        loadModules();
         validateLoad();
     }
 
-    private void loadManagers() {
-        managers = new ArrayList<>();
+    private void loadModules() {
+        modules = new HashMap<>(); // this must be initialised even if it isn't filled, so that getManager() works
+
+        // add managers
+        addModule(ConfigManager.class);
+        addModule(CombatManager.class);
+        addModule(CharacterManager.class);
+
+        // add listeners
+        addModule(CombatListener.class);
+
+        // sort managers
+        modules = modules.entrySet().stream().sorted(Map.Entry.comparingByValue()).collect(
+                Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e2, HashMap::new));
 
         // load managers
-        addManager(ConfigManager.class);
-        addManager(CombatManager.class);
-        addManager(CharacterManager.class);
-
-        // load listeners
-        addManager(CombatListener.class);
-
-        Collections.sort(managers);
-
-        managers.forEach(manager -> {
+        modules.values().forEach(manager -> {
             try {
                 manager.initLoad();
             } catch (final ManagerLoadException e) {
@@ -90,22 +102,22 @@ public final class EldenRhym extends JavaPlugin {
 
     private void validateLoad() {
         int loaded = 0;
-        for (final Manager manager : managers) {
-            if (manager.isLoaded()) {
+        for (final Module module : modules.values()) {
+            if (module.isLoaded()) {
                 loaded++;
             }
         }
-        final boolean success = loaded == managers.size();
+        final boolean success = loaded == modules.size();
         EldenRhym.log(success ? Level.INFO : Level.WARNING,
-                loaded + "/" + managers.size() + " managers/listeners have been loaded! " +
+                loaded + " / " + modules.size() + " Modules have been loaded! " + getName() +
                         (success
-                                ? "EldenRhym has been loaded successfully with no issues!"
-                                : managers.size() - loaded + " of these could not be loaded, this may cause problems. Check your logs!"));
+                                ? " has been loaded successfully with no issues!"
+                                : " has failed to load correctly as some modules could not be loaded! Please check your logs!"));
 
     }
 
     public void reload() {
-        managers.forEach(manager -> {
+        modules.values().forEach(manager -> {
             try {
                 manager.initReload();
             } catch (final ManagerLoadException e) {
@@ -115,9 +127,9 @@ public final class EldenRhym extends JavaPlugin {
         validateLoad();
     }
 
-    private <T extends Manager> void addManager(final Class<T> manager) {
-        final Optional<T> opt = Manager.initialise(this, manager);
-        opt.ifPresent(t -> managers.add(t));
+    private <T extends Module> void addModule(final Class<T> module) {
+        final Optional<? extends Module> opt = Module.initialise(this, module);
+        opt.ifPresent(t -> modules.put(module, t));
     }
 
     /**
@@ -128,20 +140,19 @@ public final class EldenRhym extends JavaPlugin {
      * @return The manager
      */
     @SuppressWarnings("unchecked")
-    public <T extends Manager> T getManager(final Class<T> type) {
-        for (final Manager manager : managers) {
-            if (manager.getClazz() == type) {
-                return (T) manager;
-            }
+    public <T extends Module> T getManager(final Class<T> type) {
+        final Module module = modules.get(type);
+        if (module == null) {
+            throw new IllegalArgumentException("Could not find module of type " + type.getName() + ". Contact developer! Most likely EldenRhym.getManager() has been called from a Module's constructor!");
         }
-        throw new IllegalArgumentException("Could not find manager of type " + type.getName());
+        return (T) module;
     }
 
     @Override
     public void onDisable() {
-        managers.forEach(Manager::shutdown);
+        modules.values().forEach(Module::shutdown);
         this.getServer().getScheduler().cancelTasks(this);
 
-        log(Level.INFO, "EldenRhym is disabled.");
+        log(Level.INFO, getName() + " is disabled.");
     }
 }

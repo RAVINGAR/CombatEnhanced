@@ -12,19 +12,29 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.logging.Level;
 
-public abstract class Manager implements Comparable<Manager> {
+public abstract class Module implements Comparable<Module> {
     protected final EldenRhym plugin;
-    protected final Class<? extends Manager> clazz;
+    protected final Class<? extends Module> clazz;
 
-    protected final List<Class<? extends Manager>> dependsOn;
+    protected final List<Class<? extends Module>> dependsOn;
     private boolean isLoaded;
 
+    /**
+     * The constructor for a Module, should only ever be called by {@link Module#initialise(EldenRhym, Class)}.
+     * Implementations of Managers should have one public constructor with a EldenRhym object parameter.
+     * The implementing constructor CANNOT call {@link EldenRhym#getManager(Class)} otherwise potential issues
+     * may occur. This must be done in {@link this#load()}.
+     *
+     * @param identifier The class of this manager
+     * @param plugin     The owning plugin
+     * @param dependsOn  Other managers which are loaded before this manager
+     */
     @SafeVarargs
-    protected Manager(final Class<? extends Manager> identifier, final EldenRhym plugin, final Class<? extends Manager>... dependsOn) {
+    protected Module(final Class<? extends Module> identifier, final EldenRhym plugin, final Class<? extends Module>... dependsOn) {
         this.plugin = plugin;
         this.clazz = identifier;
         this.dependsOn = new ArrayList<>();
-        for (final Class<? extends Manager> manager : dependsOn) {
+        for (final Class<? extends Module> manager : dependsOn) {
             this.dependsOn.add(manager);
         }
         this.isLoaded = false;
@@ -37,20 +47,20 @@ public abstract class Manager implements Comparable<Manager> {
         } catch (final NoSuchMethodException e) {
             EldenRhym.log(Level.SEVERE, "Could not find valid constructor for " + identifier.getName());
         } catch (final InvocationTargetException e) {
-            EldenRhym.log(Level.SEVERE, "Failed to initialise manager '%s'", identifier.getName());
+            EldenRhym.log(Level.SEVERE, "Failed to initialise manager '%s'!", e, identifier.getName());
         } catch (InstantiationException | IllegalAccessException e) {
-            EldenRhym.log(Level.SEVERE, "Something went severely wrong creating new instance of manager '%s'!", identifier.getName());
+            EldenRhym.log(Level.SEVERE, "Something went severely wrong creating new instance of manager '%s'!", e, identifier.getName());
         }
         return Optional.empty();
     }
 
-    public Class<? extends Manager> getClazz() {
+    public Class<? extends Module> getClazz() {
         return clazz;
     }
 
     /**
-     * Specific Manager implementation of reload. This is called by {@link Manager#initReload()} after isLoaded
-     * is set to false. Where {@link Manager#load()} is called after this method
+     * Specific Module implementation of reload. This is called by {@link Module#initReload()} after isLoaded
+     * is set to false. Where {@link Module#load()} is called after this method
      */
     protected abstract void reload();
 
@@ -76,7 +86,7 @@ public abstract class Manager implements Comparable<Manager> {
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     public void initLoad() throws ManagerLoadException {
         boolean canLoad = true;
-        for (final Class<? extends Manager> clazz : dependsOn) {
+        for (final Class<? extends Module> clazz : dependsOn) {
             if (!plugin.getManager(clazz).isLoaded()) {
                 canLoad = false;
                 break;
@@ -94,7 +104,7 @@ public abstract class Manager implements Comparable<Manager> {
         isLoaded = true;
     }
 
-    public List<Class<? extends Manager>> getDependsOn() {
+    public List<Class<? extends Module>> getDependsOn() {
         return Collections.unmodifiableList(dependsOn);
     }
 
@@ -106,15 +116,15 @@ public abstract class Manager implements Comparable<Manager> {
     public abstract void shutdown();
 
     @Override
-    public int compareTo(@NotNull final Manager manager) {
-        final Class<? extends Manager> clazz = manager.getClazz();
+    public int compareTo(@NotNull final Module module) {
+        final Class<? extends Module> clazz = module.getClazz();
         if (clazz.equals(this.getClazz())) {
             return 0;
         }
         if (dependsOn.contains(clazz)) {
-            return 1;
-        } else {
             return -1;
+        } else {
+            return 1;
         }
     }
 
@@ -126,8 +136,8 @@ public abstract class Manager implements Comparable<Manager> {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        final Manager manager = (Manager) o;
-        return clazz.equals(manager.clazz);
+        final Module module = (Module) o;
+        return clazz.equals(module.clazz);
     }
 
     @Override

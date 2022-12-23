@@ -1,7 +1,7 @@
 package com.ravingarinc.eldenrhym.character;
 
 import com.ravingarinc.eldenrhym.EldenRhym;
-import com.ravingarinc.eldenrhym.api.Manager;
+import com.ravingarinc.eldenrhym.api.Module;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-public class CharacterManager extends Manager {
+public class CharacterManager extends Module {
     private final Map<UUID, CharacterPlayer> playerMap;
     private final Map<UUID, CharacterMonster> monsterMap;
 

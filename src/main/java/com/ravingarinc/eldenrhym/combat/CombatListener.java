@@ -16,11 +16,16 @@ import org.bukkit.inventory.ItemStack;
 import java.util.UUID;
 
 public class CombatListener extends DependentListener {
-    private final CombatManager manager;
+    private CombatManager manager;
 
     public CombatListener(final EldenRhym plugin) {
         super(CombatListener.class, plugin, CombatManager.class);
-        this.manager = plugin.getManager(CombatManager.class);
+    }
+
+    @Override
+    protected void load() {
+        manager = plugin.getManager(CombatManager.class);
+        super.load();
     }
 
     @EventHandler(ignoreCancelled = true)

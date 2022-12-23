@@ -1,7 +1,7 @@
 package com.ravingarinc.eldenrhym.combat;
 
 import com.ravingarinc.eldenrhym.EldenRhym;
-import com.ravingarinc.eldenrhym.api.Manager;
+import com.ravingarinc.eldenrhym.api.Module;
 import com.ravingarinc.eldenrhym.character.CharacterEntity;
 import com.ravingarinc.eldenrhym.character.CharacterManager;
 import com.ravingarinc.eldenrhym.combat.event.DodgeEvent;
@@ -25,11 +25,11 @@ import java.util.UUID;
  * called from an asynchronous thread.
  */
 @ThreadSafe
-public class CombatManager extends Manager {
+public class CombatManager extends Module {
     private static final long PERIOD = 5L;
     private final Settings settings;
     private final BukkitScheduler scheduler;
-    private final CharacterManager characterManager;
+    private CharacterManager characterManager;
     private CombatRunner runner;
     private IdentifierRunner<PlayerBlockEvent> blockRunner;
 
@@ -38,7 +38,6 @@ public class CombatManager extends Manager {
     public CombatManager(final EldenRhym plugin) {
         super(CombatManager.class, plugin, ConfigManager.class, CharacterManager.class);
         this.settings = new Settings();
-        this.characterManager = plugin.getManager(CharacterManager.class);
         this.scheduler = plugin.getServer().getScheduler();
     }
 
@@ -84,6 +83,7 @@ public class CombatManager extends Manager {
 
     @Override
     protected void load() {
+        characterManager = plugin.getManager(CharacterManager.class);
         runner = new CombatRunner();
         dodgeRunner = new IdentifierRunner<>();
         blockRunner = new IdentifierRunner<>();
