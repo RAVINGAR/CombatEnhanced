@@ -1,0 +1,48 @@
+combat-features:
+  #All time settings are measured in milliseconds
+  debug: true
+  counter-attack:
+    # Counter attacks are performed after a successful parry or block if the attacker lands a hit within a given window
+    # The counter attack uses an MMOCore skill based on (todo decide - the item they are using, the class?)
+    enabled: true
+    # After a successful parry/block, a counter attack will only occur between the start-window and end-window
+    start-time: 100
+    end-time: 500
+  parry:
+    # For players without a shield, right-clicking. TODO decide EITHER or something else
+    # Option 1 - Players Right Click to Parry
+    #   Parry would behave similarly to a shield-block in that there is an expiration time. However that time would
+    #   be much shorter.
+    #
+    # Option 2 - Player Attack the Target at the same time they attack them
+    #  Only problem with this is that parrying becomes more passive and accidental
+    enabled: true
+  dodge:
+    # A player can dodge via pressing the F keybind (player swap hands). If the player is not in the air the player
+    # will be 'thrown' in the direction they are moving. For the duration of the dodge they mitigate any targetted damage taken.
+    # A player cannot dodge if they;
+    # - are already dodging
+    # - are blocking
+    # - have no stamina
+    enabled: true
+    #The warmup before a player can dodge. The dodge can be interrupted if the player takes damage in this time
+    warmup: 100
+    #For how long is the entity dodging
+    duration: 300
+    #How strong the dodge is.
+    strength: 0.5
+    #How much is damage mitigated by - change this to be based on an MMOItems stat later
+    mitigation: 0.6
+  block:
+    # When a player blocks, a block event is queued which has an expiry time of the specified duration
+    # If an attack is made against a player who is blocking, if their block has not expired, then damage is mitigated
+    # by the specified amount
+    # A player cannot block if they;
+    # - have a cooldown on their shield
+    # - have no stamina
+    # - if they are dodging
+    enabled: true
+    # the duration until a block expires
+    duration: 600
+    #How much is damage mitigated by - change this to be based on an MMOItems stat later
+    mitigation: 1.0

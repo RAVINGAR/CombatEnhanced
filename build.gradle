@@ -3,20 +3,19 @@ import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 plugins {
     id 'java-library'
     id 'pmd'
+    id 'net.minecrell.plugin-yml.bukkit' version '0.5.1'
 }
 
-group = 'com.ravingarinc'
+group = 'com.ravingarinc.eldenrhym'
 version = '1.0-SNAPSHOT'
 
 repositories {
     gradlePluginPortal()
     mavenCentral()
+
     maven {
         name = 'spigotmc-repo'
         url = 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/'
-        content {
-            includeGroup 'org.spigotmc'
-        }
     }
     maven {
         name = 'sonatype'
@@ -31,14 +30,23 @@ repositories {
             includeGroup 'net.Indyuce'
         }
     }
+    maven {
+        name 'dmulloy2-repo'
+        url 'https://repo.dmulloy2.net/repository/public/'
+        content {
+            includeGroup 'com.comphenix.protocol'
+        }
+    }
 }
 
 dependencies {
-    implementation 'org.jetbrains:annotations:23.0.0'
+    implementation 'org.jetbrains:annotations:23.1.0'
+    bukkitLibrary 'javax.vecmath:vecmath:1.5.2'
     compileOnly 'org.spigotmc:spigot-api:1.18.2-R0.1-SNAPSHOT'
     compileOnly 'net.Indyuce:MMOItems-API:6.8.3-SNAPSHOT'
     compileOnly 'io.lumine:MythicLib-dist:1.4.2-SNAPSHOT'
-    testImplementation 'org.jetbrains:annotations:23.0.0'
+    compileOnly 'com.comphenix.protocol:ProtocolLib:4.7.0'
+    testImplementation 'org.jetbrains:annotations:23.1.0'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0'
 }
@@ -115,11 +123,24 @@ task(verifyTestExistence) {
     }
 }
 
-processResources {
-    def props = [version: version]
-    inputs.properties props
-    filteringCharset 'UTF-8'
-    filesMatching('plugin.yml') {
-        expand props
-    }
+bukkit {
+    // Default values can be overridden if needed
+    // name = 'TestPlugin'
+    // version = '1.0'
+    // description = 'This is a test plugin'
+    // website = 'https://example.com'
+    // author = 'Notch'
+
+    name = 'EldenRhym'
+    version = project.version
+    description = 'Feature plugin for EldenRhym Server'
+    main = 'com.ravingarinc.eldenrhym.EldenRhym'
+
+    // API version (should be set for 1.13+)
+    apiVersion = '1.18'
+
+    // Other possible properties from plugin.yml (optional)
+    author = 'RAVINGAR'
+    depend = ['MMOItems', 'MythicMobs', 'MythicLib']
+    defaultPermission = 'FALSE' // 'TRUE', 'FALSE', 'OP' or 'NOT_OP'
 }
