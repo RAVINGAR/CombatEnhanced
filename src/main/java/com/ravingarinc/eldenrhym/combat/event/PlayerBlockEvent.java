@@ -9,8 +9,8 @@ import org.jetbrains.annotations.Blocking;
 We can make this an abstract class later if we want to allow for monsters to block also
  */
 public class PlayerBlockEvent extends CombatEvent<CharacterPlayer> {
-    public PlayerBlockEvent(final CharacterPlayer entity, final long duration) {
-        super(entity, duration);
+    public PlayerBlockEvent(final CharacterPlayer entity, final long start, final long duration) {
+        super(entity, start, duration);
     }
 
     @Override

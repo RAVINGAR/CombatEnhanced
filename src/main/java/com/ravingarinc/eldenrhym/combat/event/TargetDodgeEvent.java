@@ -16,10 +16,11 @@ public class TargetDodgeEvent extends DodgeEvent {
 
     public TargetDodgeEvent(@NotNull final CharacterEntity<? extends LivingEntity> entity,
                             @NotNull final CharacterEntity<? extends LivingEntity> target,
+                            final long start,
                             final long warmup,
                             final long duration,
                             final float strength) {
-        super(entity, warmup, duration, strength);
+        super(entity, start, warmup, duration, strength);
         this.target = target;
     }
 

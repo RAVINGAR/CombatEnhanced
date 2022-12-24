@@ -21,9 +21,9 @@ public abstract class CombatEvent<T extends CharacterEntity<?>> implements Calla
     /**
      * @param duration Duration in milliseconds
      */
-    public CombatEvent(final T entity, final long duration) {
+    public CombatEvent(final T entity, final long startTime, final long duration) {
         this.entity = entity;
-        this.expireTime = System.currentTimeMillis() + duration;
+        this.expireTime = startTime + duration;
         this.interrupted = false;
     }
 

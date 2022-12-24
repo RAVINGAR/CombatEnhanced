@@ -28,7 +28,9 @@ public abstract class EventRunner<T extends CombatEvent<?>> extends BukkitRunnab
     }
 
     public void add(@NotNull final T event) {
-        events.add(event);
+        if (!event.call()) {
+            events.add(event);
+        }
     }
 
     public void remove(@NotNull final T event) {

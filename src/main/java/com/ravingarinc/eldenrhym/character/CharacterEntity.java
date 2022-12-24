@@ -2,7 +2,9 @@ package com.ravingarinc.eldenrhym.character;
 
 import com.ravingarinc.eldenrhym.EldenRhym;
 import com.ravingarinc.eldenrhym.api.AsynchronousException;
+import com.ravingarinc.eldenrhym.api.BukkitApi;
 import com.ravingarinc.eldenrhym.api.Pair;
+import com.ravingarinc.eldenrhym.api.TaskCallback;
 import com.ravingarinc.eldenrhym.api.Vector3;
 import org.bukkit.Location;
 import org.bukkit.entity.LivingEntity;
@@ -10,15 +12,13 @@ import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.Async;
 import org.jetbrains.annotations.Blocking;
+import org.jetbrains.annotations.NonBlocking;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.Optional;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
+import java.util.logging.Level;
 
 /**
  * Represents a thread safe entity that wraps bukkit api such that it can be called in async computations.
@@ -27,26 +27,35 @@ import java.util.function.Consumer;
 @ThreadSafe
 public abstract class CharacterEntity<T extends LivingEntity> {
     protected final T entity;
-    private final EldenRhym plugin;
-    private final BukkitScheduler scheduler;
+    protected final EldenRhym plugin;
+    protected final CharacterManager characterManager;
+    protected final BukkitScheduler scheduler;
 
     protected CharacterEntity(final EldenRhym plugin, final T entity) {
         this.entity = entity;
         this.plugin = plugin;
         this.scheduler = plugin.getServer().getScheduler();
+        this.characterManager = plugin.getModule(CharacterManager.class);
     }
 
     public T getEntity() {
         return entity;
     }
 
-    //TODO Rewrite this maybe to use non bukkit api and run async
-    public abstract Optional<LivingEntity> getTarget(double maxDistance);
+    /**
+     * Gets the target from a raycast based on the direction of the entity.
+     *
+     * @param maxDistance the max distance to look
+     * @return A possible target
+     */
+    @Async.Execute
+    @Blocking
+    public abstract Optional<CharacterEntity<?>> getTarget(double maxDistance) throws AsynchronousException;
 
     @Blocking
     @Async.Execute
     public Vector3 getLocation() throws AsynchronousException {
-        return executeSyncComputation(() -> {
+        return executeBlockingSyncComputation(() -> {
             final Location loc = entity.getLocation();
             return new Vector3(loc.getX(), loc.getY(), loc.getZ());
         });
@@ -55,16 +64,19 @@ public abstract class CharacterEntity<T extends LivingEntity> {
     @Blocking
     @Async.Execute
     public Vector3 getVelocity() throws AsynchronousException {
-        return executeSyncComputation(() -> {
-            final Vector velocity = entity.getVelocity();
-            return new Vector3(velocity.getX(), velocity.getY(), velocity.getZ());
-        });
+        return executeBlockingSyncComputation(this::syncGetVelocity);
+    }
+
+    @BukkitApi
+    public Vector3 syncGetVelocity() {
+        final Vector velocity = entity.getVelocity();
+        return new Vector3(velocity.getX(), velocity.getY(), velocity.getZ());
     }
 
     @Blocking
     @Async.Execute
     public Vector3 getDirection() throws AsynchronousException {
-        final Pair<Float, Float> pair = executeSyncComputation(() -> {
+        final Pair<Float, Float> pair = executeBlockingSyncComputation(() -> {
             final Location location = entity.getLocation();
             return new Pair<>(location.getYaw(), location.getPitch());
         });
@@ -88,19 +100,44 @@ public abstract class CharacterEntity<T extends LivingEntity> {
      * Executes a computation on the main thread, then waits for the result to be returned. Can be used in an
      * asynchronous environment.
      */
-    @Blocking
     @Async.Execute
-    protected <V> V executeSyncComputation(final Callable<V> callable) throws AsynchronousException {
-        final Future<V> future = scheduler.callSyncMethod(plugin, callable);
-        try {
-            return future.get(1000, TimeUnit.MILLISECONDS);
-        } catch (final ExecutionException e) {
-            throw new AsynchronousException("Encountered issue waiting for computation for CharacterEntity.", e);
-        } catch (final InterruptedException e) {
-            throw new AsynchronousException("Thread was interrupted while waiting for computation for CharacterEntity.", e);
-        } catch (final TimeoutException e) {
-            throw new AsynchronousException("Computation for CharacterEntity timed out! (Took longer than 1 second!)", e);
-        }
+    @Blocking
+    public <V> V executeBlockingSyncComputation(final Callable<V> callable) throws AsynchronousException {
+        final TaskCallback<V> callback = new TaskCallback<>(callable);
+        scheduler.runTask(plugin, callback);
+        return callback.get();
+    }
+
+    /**
+     * Execute a sync computation from the provided callable on a new asynchronous thread. Once the sync
+     * computation has completed, consume the value on the asynchronous thread via the provided consumer.
+     *
+     * @param callable The callable to be executed as sync
+     * @param consumer The consumer to be executed as async
+     * @param <V>      The type parameter
+     * @throws AsynchronousException if an issue occurs
+     */
+    @NonBlocking
+    public <V> void executeSyncComputation(final Callable<V> callable, final Consumer<V> consumer) throws AsynchronousException {
+        scheduler.runTaskAsynchronously(plugin, () -> {
+            try {
+                consumer.accept(executeBlockingSyncComputation(callable)); // n/a
+            } catch (final AsynchronousException e) {
+                EldenRhym.log(Level.SEVERE, "Encountered AsynchronousException!", e);
+            }
+        });
+    }
+
+
+    /**
+     * Executes a runnable as on a new thread
+     *
+     * @param runnable The runnable
+     */
+    @Async.Execute
+    @NonBlocking
+    public void executeAsyncComputation(final Runnable runnable) {
+        scheduler.runTaskAsynchronously(plugin, runnable);
     }
 
     /**

@@ -23,7 +23,9 @@ public class IdentifierRunner<T extends CombatEvent<?>> extends EventRunner<T> {
 
     @Override
     public void add(@NotNull final T event) {
-        events.put(event.getCharacter().getEntity().getUniqueId(), event);
+        if (!event.call()) {
+            events.put(event.getCharacter().getEntity().getUniqueId(), event);
+        }
     }
 
 

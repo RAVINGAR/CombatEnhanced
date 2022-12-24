@@ -6,8 +6,8 @@ import org.jetbrains.annotations.Async;
 import org.jetbrains.annotations.Blocking;
 
 public class AttackEvent extends CombatEvent<CharacterEntity<?>> {
-    public AttackEvent(final long duration) {
-        super(null, duration);
+    public AttackEvent(final long start, final long duration) {
+        super(null, start, duration);
 
     }
 

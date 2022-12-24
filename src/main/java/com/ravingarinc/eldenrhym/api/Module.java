@@ -8,7 +8,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.logging.Level;
 
@@ -22,7 +21,7 @@ public abstract class Module implements Comparable<Module> {
     /**
      * The constructor for a Module, should only ever be called by {@link Module#initialise(EldenRhym, Class)}.
      * Implementations of Managers should have one public constructor with a EldenRhym object parameter.
-     * The implementing constructor CANNOT call {@link EldenRhym#getManager(Class)} otherwise potential issues
+     * The implementing constructor CANNOT call {@link EldenRhym#getModule(Class)} otherwise potential issues
      * may occur. This must be done in {@link this#load()}.
      *
      * @param identifier The class of this manager
@@ -34,8 +33,8 @@ public abstract class Module implements Comparable<Module> {
         this.plugin = plugin;
         this.clazz = identifier;
         this.dependsOn = new ArrayList<>();
-        for (final Class<? extends Module> manager : dependsOn) {
-            this.dependsOn.add(manager);
+        for (final Class<? extends Module> module : dependsOn) {
+            this.dependsOn.add(module);
         }
         this.isLoaded = false;
     }
@@ -65,12 +64,12 @@ public abstract class Module implements Comparable<Module> {
     protected abstract void reload();
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
-    public void initReload() throws ManagerLoadException {
+    public void initReload() throws ModuleLoadException {
         isLoaded = false;
         try {
             reload();
         } catch (final Exception e) {
-            throw new ManagerLoadException(this, e);
+            throw new ModuleLoadException(this, e);
         }
         initLoad();
     }
@@ -84,23 +83,23 @@ public abstract class Module implements Comparable<Module> {
      * Called after initialisaton of all managers but before any managers of which this manager depends on.
      */
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
-    public void initLoad() throws ManagerLoadException {
+    public void initLoad() throws ModuleLoadException {
         boolean canLoad = true;
         for (final Class<? extends Module> clazz : dependsOn) {
-            if (!plugin.getManager(clazz).isLoaded()) {
+            if (!plugin.getModule(clazz).isLoaded()) {
                 canLoad = false;
                 break;
             }
         }
         if (!canLoad) {
-            throw new ManagerLoadException(this, ManagerLoadException.Reason.DEPENDENCY);
+            throw new ModuleLoadException(this, ModuleLoadException.Reason.DEPENDENCY);
         }
         try {
             load();
         } catch (final Exception e) {
-            throw new ManagerLoadException(this, e);
+            throw new ModuleLoadException(this, e);
         }
-        EldenRhym.log(Level.INFO, getName() + " has been loaded successfully!");
+        EldenRhym.log(Level.INFO, getName() + " has been loaded");
         isLoaded = true;
     }
 
@@ -113,18 +112,24 @@ public abstract class Module implements Comparable<Module> {
         return split[split.length - 1];
     }
 
-    public abstract void shutdown();
+    public void tryShutdown() {
+        if (isLoaded) {
+            shutdown();
+        }
+    }
+
+    protected abstract void shutdown();
 
     @Override
     public int compareTo(@NotNull final Module module) {
         final Class<? extends Module> clazz = module.getClazz();
-        if (clazz.equals(this.getClazz())) {
+        if (this.getClazz().equals(clazz)) {
             return 0;
         }
-        if (dependsOn.contains(clazz)) {
-            return -1;
+        if (dependsOn.isEmpty()) {
+            return -2;
         } else {
-            return 1;
+            return dependsOn.contains(clazz) ? 2 : -1;
         }
     }
 
@@ -142,7 +147,7 @@ public abstract class Module implements Comparable<Module> {
 
     @Override
     public int hashCode() {
-        return Objects.hash(clazz);
+        return clazz.hashCode();
     }
 
     public boolean isLoaded() {

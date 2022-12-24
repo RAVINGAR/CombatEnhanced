@@ -1,6 +1,7 @@
 package com.ravingarinc.eldenrhym.combat;
 
 import com.ravingarinc.eldenrhym.EldenRhym;
+import com.ravingarinc.eldenrhym.api.AsynchronousException;
 import com.ravingarinc.eldenrhym.api.Module;
 import com.ravingarinc.eldenrhym.character.CharacterEntity;
 import com.ravingarinc.eldenrhym.character.CharacterManager;
@@ -17,8 +18,8 @@ import org.jetbrains.annotations.Async;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.concurrent.ThreadSafe;
-import java.util.Optional;
 import java.util.UUID;
+import java.util.logging.Level;
 
 /**
  * Manages combat interactions and computations. Any methods marked with Async.Execute means that the method is
@@ -50,27 +51,31 @@ public class CombatManager extends Module {
     }
 
     public void queueBlockEvent(@NotNull final Player entity) {
-        scheduler.runTaskAsynchronously(plugin, () -> blockRunner.add(new PlayerBlockEvent(characterManager.getPlayer(entity), settings.blockDuration)));
+        final long time = System.currentTimeMillis();
+        scheduler.runTaskAsynchronously(plugin, () -> blockRunner.add(new PlayerBlockEvent(characterManager.getPlayer(entity), time, settings.blockDuration)));
         EldenRhym.logIfDebug(() -> "Queued block event for " + entity.getName());
     }
 
     public void queueDodgeEvent(@NotNull final Player entity) {
-        scheduler.runTaskAsynchronously(plugin, () -> queueDodgeEvent(characterManager.getPlayer(entity)));
-        EldenRhym.logIfDebug(() -> "Queued dodge event for " + entity.getName());
+        final long time = System.currentTimeMillis();
+        scheduler.runTaskAsynchronously(plugin, () -> queueDodgeEvent(characterManager.getPlayer(entity), time));
     }
 
     public void queueDodgeEvent(@NotNull final Monster entity) {
-        scheduler.runTaskAsynchronously(plugin, () -> queueDodgeEvent(characterManager.getMonster(entity)));
-        EldenRhym.logIfDebug(() -> "Queued dodge event for " + entity.getName());
+        final long time = System.currentTimeMillis();
+        scheduler.runTaskAsynchronously(plugin, () -> queueDodgeEvent(characterManager.getMonster(entity), time));
     }
 
     @Async.Execute
-    private void queueDodgeEvent(final CharacterEntity<?> character) {
-        character.getTarget(8).ifPresentOrElse((target) -> {
-            final Optional<CharacterEntity<?>> targetEntity = characterManager.getCharacter(target);
-            targetEntity.ifPresent((targetChar) -> dodgeRunner.add(new TargetDodgeEvent(character, targetChar, settings.dodgeWarmup, settings.dodgeDuration, settings.dodgeStrength)));
-        }, () -> dodgeRunner.add(new DodgeEvent(character, settings.dodgeWarmup, settings.dodgeDuration, settings.dodgeStrength)));
-
+    private void queueDodgeEvent(final CharacterEntity<?> character, final long start) {
+        try {
+            character.getTarget(8)
+                    .ifPresentOrElse((target) ->
+                                    dodgeRunner.add(new TargetDodgeEvent(character, target, start, settings.dodgeWarmup, settings.dodgeDuration, settings.dodgeStrength)),
+                            () -> dodgeRunner.add(new DodgeEvent(character, start, settings.dodgeWarmup, settings.dodgeDuration, settings.dodgeStrength)));
+        } catch (final AsynchronousException e) {
+            EldenRhym.log(Level.SEVERE, "Encountered issue adding dodge event!", e);
+        }
     }
 
 
@@ -83,7 +88,7 @@ public class CombatManager extends Module {
 
     @Override
     protected void load() {
-        characterManager = plugin.getManager(CharacterManager.class);
+        characterManager = plugin.getModule(CharacterManager.class);
         runner = new CombatRunner();
         dodgeRunner = new IdentifierRunner<>();
         blockRunner = new IdentifierRunner<>();
@@ -94,7 +99,7 @@ public class CombatManager extends Module {
     }
 
     @Override
-    public void shutdown() {
+    protected void shutdown() {
         dodgeRunner.cancel();
         blockRunner.cancel();
         runner.cancel();

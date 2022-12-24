@@ -4,10 +4,10 @@ import com.ravingarinc.eldenrhym.EldenRhym;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 
-public class DependentListener extends Module implements Listener {
+public class ModuleListener extends Module implements Listener {
 
     @SafeVarargs
-    protected DependentListener(final Class<? extends Module> identifier, final EldenRhym plugin, final Class<? extends Module>... dependsOn) {
+    protected ModuleListener(final Class<? extends Module> identifier, final EldenRhym plugin, final Class<? extends Module>... dependsOn) {
         super(identifier, plugin, dependsOn);
     }
 
@@ -22,7 +22,7 @@ public class DependentListener extends Module implements Listener {
     }
 
     @Override
-    public void shutdown() {
+    protected void shutdown() {
         // there is nothing to be shut down...
     }
 }

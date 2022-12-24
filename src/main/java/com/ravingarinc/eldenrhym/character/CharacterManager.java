@@ -7,6 +7,7 @@ import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Async;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -31,7 +32,7 @@ public class CharacterManager extends Module {
      */
     @Async.Execute
     @NotNull
-    public CharacterPlayer getPlayer(final Player entity) {
+    public CharacterPlayer getPlayer(@NotNull final Player entity) {
         final UUID uuid = entity.getUniqueId();
         CharacterPlayer player = playerMap.get(uuid);
         if (player == null) {
@@ -49,7 +50,7 @@ public class CharacterManager extends Module {
      */
     @Async.Execute
     @NotNull
-    public CharacterMonster getMonster(final Monster entity) {
+    public CharacterMonster getMonster(@NotNull final Monster entity) {
         final UUID uuid = entity.getUniqueId();
         CharacterMonster monster = monsterMap.get(uuid);
         if (monster == null) {
@@ -67,7 +68,7 @@ public class CharacterManager extends Module {
      * @return An optional which may or may not contain a CharacterEntity
      */
     @Async.Execute
-    public Optional<CharacterEntity<?>> getCharacter(final LivingEntity entity) {
+    public Optional<CharacterEntity<?>> getCharacter(@Nullable final LivingEntity entity) {
         if (entity instanceof Player player) {
             return Optional.of(getPlayer(player));
         }
@@ -88,7 +89,7 @@ public class CharacterManager extends Module {
     }
 
     @Override
-    public void shutdown() {
+    protected void shutdown() {
 
     }
 

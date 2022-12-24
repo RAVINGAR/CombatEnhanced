@@ -1,9 +1,7 @@
 package com.ravingarinc.eldenrhym.combat;
 
 import com.ravingarinc.eldenrhym.EldenRhym;
-import com.ravingarinc.eldenrhym.api.DependentListener;
-import net.Indyuce.mmoitems.api.player.PlayerData;
-import org.bukkit.Location;
+import com.ravingarinc.eldenrhym.api.ModuleListener;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -15,7 +13,7 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.UUID;
 
-public class CombatListener extends DependentListener {
+public class CombatListener extends ModuleListener {
     private CombatManager manager;
 
     public CombatListener(final EldenRhym plugin) {
@@ -24,7 +22,7 @@ public class CombatListener extends DependentListener {
 
     @Override
     protected void load() {
-        manager = plugin.getManager(CombatManager.class);
+        manager = plugin.getModule(CombatManager.class);
         super.load();
     }
 
@@ -32,7 +30,7 @@ public class CombatListener extends DependentListener {
     public void onPlayerSwapHands(final PlayerSwapHandItemsEvent event) {
         event.setCancelled(true);
         final Player player = event.getPlayer();
-        if (player.isBlocking() || player.isInsideVehicle() || cannotDodge(player)) {
+        if (player.isBlocking() || player.isInsideVehicle() || player.getVelocity().getY() > 0) {
             return;
         }
         final UUID uuid = player.getUniqueId();
@@ -40,16 +38,6 @@ public class CombatListener extends DependentListener {
             return;
         }
         manager.queueDodgeEvent(player);
-    }
-
-
-    private boolean cannotDodge(final Player player) {
-        if (player.getVelocity().getY() > 0) {
-            return true;
-        }
-
-        final Location location = player.getLocation();
-        return location.getWorld().getBlockAt(location.subtract(0, -1, 0)).getType().isAir();
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -69,8 +57,10 @@ public class CombatListener extends DependentListener {
             }
 
             final UUID uuid = player.getUniqueId();
-            final PlayerData data = PlayerData.get(uuid);
-            if (data.getRPG().getStamina() > 0 && !manager.isDodging(uuid)) {
+            //final PlayerData data = PlayerData.get(uuid);
+            //data.getRPG().getStamina() > 0 &&
+            if (!manager.isDodging(uuid)) {
+                EldenRhym.logIfDebug(() -> "Listener is now queueing");
                 manager.queueBlockEvent(player);
             }
         }

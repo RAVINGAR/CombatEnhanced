@@ -12,6 +12,10 @@ public class AsynchronousException extends Exception {
         super(message, invocation);
     }
 
+    public AsynchronousException(final String message) {
+        super(message);
+    }
+
     public void report() {
         EldenRhym.log(Level.SEVERE, "AsynchronousException! " + getMessage(), getCause());
     }

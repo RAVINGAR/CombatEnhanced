@@ -1,7 +1,7 @@
 package com.ravingarinc.eldenrhym;
 
-import com.ravingarinc.eldenrhym.api.ManagerLoadException;
 import com.ravingarinc.eldenrhym.api.Module;
+import com.ravingarinc.eldenrhym.api.ModuleLoadException;
 import com.ravingarinc.eldenrhym.character.CharacterManager;
 import com.ravingarinc.eldenrhym.combat.CombatListener;
 import com.ravingarinc.eldenrhym.combat.CombatManager;
@@ -9,13 +9,12 @@ import com.ravingarinc.eldenrhym.file.ConfigManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 public final class EldenRhym extends JavaPlugin {
     public static boolean debug;
@@ -76,25 +75,21 @@ public final class EldenRhym extends JavaPlugin {
     }
 
     private void loadModules() {
-        modules = new HashMap<>(); // this must be initialised even if it isn't filled, so that getManager() works
+        modules = new LinkedHashMap<>();
 
         // add managers
         addModule(ConfigManager.class);
-        addModule(CombatManager.class);
         addModule(CharacterManager.class);
+        addModule(CombatManager.class);
 
         // add listeners
         addModule(CombatListener.class);
 
-        // sort managers
-        modules = modules.entrySet().stream().sorted(Map.Entry.comparingByValue()).collect(
-                Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e2, HashMap::new));
-
-        // load managers
+        // load modules
         modules.values().forEach(manager -> {
             try {
                 manager.initLoad();
-            } catch (final ManagerLoadException e) {
+            } catch (final ModuleLoadException e) {
                 EldenRhym.log(Level.SEVERE, e.getMessage());
             }
         });
@@ -107,20 +102,18 @@ public final class EldenRhym extends JavaPlugin {
                 loaded++;
             }
         }
-        final boolean success = loaded == modules.size();
-        EldenRhym.log(success ? Level.INFO : Level.WARNING,
-                loaded + " / " + modules.size() + " Modules have been loaded! " + getName() +
-                        (success
-                                ? " has been loaded successfully with no issues!"
-                                : " has failed to load correctly as some modules could not be loaded! Please check your logs!"));
-
+        if (loaded == modules.size()) {
+            EldenRhym.log(Level.INFO, "%s has been enabled successfully!", getName());
+        } else {
+            EldenRhym.log(Level.WARNING, "%s module/s have failed to load! Please check your logs!", (modules.size() - loaded));
+        }
     }
 
     public void reload() {
         modules.values().forEach(manager -> {
             try {
                 manager.initReload();
-            } catch (final ManagerLoadException e) {
+            } catch (final ModuleLoadException e) {
                 EldenRhym.log(Level.SEVERE, e.getMessage());
             }
         });
@@ -140,7 +133,7 @@ public final class EldenRhym extends JavaPlugin {
      * @return The manager
      */
     @SuppressWarnings("unchecked")
-    public <T extends Module> T getManager(final Class<T> type) {
+    public <T extends Module> T getModule(final Class<T> type) {
         final Module module = modules.get(type);
         if (module == null) {
             throw new IllegalArgumentException("Could not find module of type " + type.getName() + ". Contact developer! Most likely EldenRhym.getManager() has been called from a Module's constructor!");
@@ -149,8 +142,15 @@ public final class EldenRhym extends JavaPlugin {
     }
 
     @Override
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
     public void onDisable() {
-        modules.values().forEach(Module::shutdown);
+        modules.values().forEach(module -> {
+            try {
+                module.tryShutdown();
+            } catch (final Exception e) {
+                EldenRhym.log(Level.SEVERE, "Encountered issue shutting down module '%s'!", e, module.getName());
+            }
+        });
         this.getServer().getScheduler().cancelTasks(this);
 
         log(Level.INFO, getName() + " is disabled.");

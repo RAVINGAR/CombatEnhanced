@@ -22,17 +22,22 @@ public class CharacterPlayer extends CharacterEntity<Player> {
     }
 
     @Override
-    public Optional<LivingEntity> getTarget(final double maxDistance) {
-        final Location location = entity.getEyeLocation();
-        final Predicate<Entity> predicate = entity -> {
-            if (entity instanceof LivingEntity le) {
-                return !le.isDead() && le.getHealth() != 0;
-            }
-            return false;
-        };
-        final RayTraceResult result = location.getWorld().rayTrace(location, location.getDirection(), maxDistance, FluidCollisionMode.ALWAYS, true, 2, predicate);
-        if (result != null) {
-            return Optional.ofNullable((LivingEntity) result.getHitEntity());
+    @Async.Execute
+    @Blocking
+    public Optional<CharacterEntity<?>> getTarget(final double maxDistance) throws AsynchronousException {
+        final Entity target = executeBlockingSyncComputation(() -> {
+            final Location location = entity.getEyeLocation();
+            final Predicate<Entity> predicate = entity -> {
+                if (entity instanceof LivingEntity le) {
+                    return !le.isDead() && le.getHealth() != 0;
+                }
+                return false;
+            };
+            final RayTraceResult result = location.getWorld().rayTrace(location, location.getDirection(), maxDistance, FluidCollisionMode.ALWAYS, true, 2, predicate);
+            return result.getHitEntity();
+        });
+        if (target instanceof LivingEntity entity) {
+            return characterManager.getCharacter(entity);
         }
         return Optional.empty();
     }
@@ -40,6 +45,6 @@ public class CharacterPlayer extends CharacterEntity<Player> {
     @Blocking
     @Async.Execute
     public boolean isBlocking() throws AsynchronousException {
-        return executeSyncComputation(entity::isBlocking);
+        return executeBlockingSyncComputation(entity::isBlocking);
     }
 }

@@ -22,11 +22,12 @@ public class DodgeEvent extends CombatEvent<CharacterEntity<?>> {
     protected Vector3 initialVelocity = new Vector3();
 
     public DodgeEvent(@NotNull final CharacterEntity<?> entity,
+                      final long start,
                       final long warmup,
                       final long duration,
                       final float strength) {
-        super(entity, warmup + duration);
-        this.warmup = warmup + System.currentTimeMillis();
+        super(entity, start, warmup + duration);
+        this.warmup = warmup + start;
         this.strength = strength;
         this.dodging = new AtomicBoolean(false);
     }

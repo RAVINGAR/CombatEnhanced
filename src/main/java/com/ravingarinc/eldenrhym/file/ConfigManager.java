@@ -30,7 +30,7 @@ public class ConfigManager extends Module {
             return;
         }
 
-        final CombatManager manager = plugin.getManager(CombatManager.class);
+        final CombatManager manager = plugin.getModule(CombatManager.class);
         final CombatManager.Settings settings = manager.getSettings();
 
         wrap(() -> section.getBoolean("debug", false)).ifPresent(b -> EldenRhym.debug = b);
@@ -96,7 +96,7 @@ public class ConfigManager extends Module {
     }
 
     @Override
-    public void shutdown() {
+    protected void shutdown() {
 
     }
 }

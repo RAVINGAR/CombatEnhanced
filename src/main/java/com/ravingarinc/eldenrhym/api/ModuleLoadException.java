@@ -2,12 +2,12 @@ package com.ravingarinc.eldenrhym.api;
 
 import java.util.Iterator;
 
-public class ManagerLoadException extends Exception {
-    public ManagerLoadException(final Module module, final Reason reason) {
+public class ModuleLoadException extends Exception {
+    public ModuleLoadException(final Module module, final Reason reason) {
         super(reason.getMessage(module));
     }
 
-    public ManagerLoadException(final Module module, final Throwable throwable) {
+    public ModuleLoadException(final Module module, final Throwable throwable) {
         super(Reason.EXCEPTION.getMessage(module) + throwable.getMessage(), throwable);
     }
 
@@ -19,16 +19,32 @@ public class ManagerLoadException extends Exception {
                 builder.append("Could not load ");
                 builder.append(module.getName());
                 builder.append(" as ");
+
                 final Iterator<Class<? extends Module>> iterator = module.getDependsOn().iterator();
-                iterator.forEachRemaining(clazz -> {
-                    final String[] split = clazz.getName().split("\\.");
-                    builder.append(split[split.length - 1]);
-                    if (iterator.hasNext()) {
-                        builder.append(", ");
+                int loaded = 0;
+                while (iterator.hasNext()) {
+                    final Class<? extends Module> clazz = iterator.next();
+                    if (!isModuleLoaded(clazz, module)) {
+                        loaded++;
+                        final String[] split = clazz.getName().split("\\.");
+                        builder.append(split[split.length - 1]);
+                        if (iterator.hasNext()) {
+                            builder.append(",");
+                        }
+                        builder.append(" ");
                     }
-                });
-                builder.append(" were not loaded!");
+                }
+                builder.append(loaded == 1 ? "was" : "were");
+                builder.append(" not loaded!");
                 return builder.toString();
+            }
+
+            private boolean isModuleLoaded(final Class<? extends Module> clazz, final Module module) {
+                try {
+                    return module.plugin.getModule(clazz).isLoaded();
+                } catch (final IllegalArgumentException ignored) {
+                    return false;
+                }
             }
         },
         EXCEPTION() {
