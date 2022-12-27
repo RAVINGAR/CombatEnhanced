@@ -168,4 +168,11 @@ bukkit {
     author = 'RAVINGAR'
     depend = ['MMOItems', 'MythicMobs', 'MythicLib']
     defaultPermission = 'FALSE' // 'TRUE', 'FALSE', 'OP' or 'NOT_OP'
+
+    commands {
+        ereload {
+            description = 'Reloads the EldenRhym plugin'
+            usage = '/ereload'
+        }
+    }
 }

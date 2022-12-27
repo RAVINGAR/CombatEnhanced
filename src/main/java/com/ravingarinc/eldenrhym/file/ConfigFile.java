@@ -8,6 +8,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.logging.Level;
 
 public class ConfigFile {
@@ -25,6 +27,14 @@ public class ConfigFile {
     }
 
     private void saveDefaultConfig() {
+        try (final InputStream stream = plugin.getResource(name)) {
+            if (stream != null) {
+                final YamlConfiguration defaultConfig = YamlConfiguration.loadConfiguration(new InputStreamReader(stream));
+                this.config.setDefaults(defaultConfig);
+            }
+        } catch (final IOException e) {
+            EldenRhym.log(Level.SEVERE, "Encountered issue loading default configuration for file '%s'!", name, e);
+        }
         if (!file.exists()) {
             plugin.saveResource(name, false);
         }

@@ -2,9 +2,11 @@ package com.ravingarinc.eldenrhym;
 
 import com.ravingarinc.eldenrhym.api.Module;
 import com.ravingarinc.eldenrhym.api.ModuleLoadException;
+import com.ravingarinc.eldenrhym.character.CharacterListener;
 import com.ravingarinc.eldenrhym.character.CharacterManager;
 import com.ravingarinc.eldenrhym.combat.CombatListener;
 import com.ravingarinc.eldenrhym.combat.CombatManager;
+import com.ravingarinc.eldenrhym.command.ReloadCommand;
 import com.ravingarinc.eldenrhym.file.ConfigManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.Nullable;
@@ -19,6 +21,8 @@ import java.util.logging.Logger;
 public final class EldenRhym extends JavaPlugin {
     public static boolean debug;
     private static Logger logger;
+
+    private static EldenRhym instance;
 
     private Map<Class<? extends Module>, Module> modules;
 
@@ -55,6 +59,10 @@ public final class EldenRhym extends JavaPlugin {
         }
     }
 
+    public static EldenRhym getInstance() {
+        return instance;
+    }
+
     public static void runIfDebug(final Runnable runnable) {
         if (debug) {
             runnable.run();
@@ -72,6 +80,8 @@ public final class EldenRhym extends JavaPlugin {
         // Plugin startup logic
         loadModules();
         validateLoad();
+
+        getCommand("ereload").setExecutor(new ReloadCommand());
     }
 
     private void loadModules() {
@@ -84,6 +94,7 @@ public final class EldenRhym extends JavaPlugin {
 
         // add listeners
         addModule(CombatListener.class);
+        addModule(CharacterListener.class);
 
         // load modules
         modules.values().forEach(manager -> {

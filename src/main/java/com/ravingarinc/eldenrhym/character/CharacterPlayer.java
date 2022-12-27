@@ -25,7 +25,7 @@ public class CharacterPlayer extends CharacterEntity<Player> {
     @Async.Execute
     @Blocking
     public Optional<CharacterEntity<?>> getTarget(final double maxDistance) throws AsynchronousException {
-        final Entity target = executeBlockingSyncComputation(() -> {
+        final Optional<Entity> optTarget = executeBlockingSyncComputation(() -> {
             final Location location = entity.getEyeLocation();
             final Predicate<Entity> predicate = entity -> {
                 if (entity instanceof LivingEntity le) {
@@ -34,9 +34,9 @@ public class CharacterPlayer extends CharacterEntity<Player> {
                 return false;
             };
             final RayTraceResult result = location.getWorld().rayTrace(location, location.getDirection(), maxDistance, FluidCollisionMode.ALWAYS, true, 2, predicate);
-            return result.getHitEntity();
+            return result == null ? Optional.empty() : Optional.ofNullable(result.getHitEntity());
         });
-        if (target instanceof LivingEntity entity) {
+        if (optTarget.isPresent() && optTarget.get() instanceof LivingEntity entity) {
             return characterManager.getCharacter(entity);
         }
         return Optional.empty();

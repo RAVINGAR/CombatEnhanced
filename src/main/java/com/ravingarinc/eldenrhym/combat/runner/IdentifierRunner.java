@@ -28,6 +28,10 @@ public class IdentifierRunner<T extends CombatEvent<?>> extends EventRunner<T> {
         }
     }
 
+    public void remove(@NotNull final UUID uuid) {
+        events.get(uuid).interrupt();
+    }
+
 
     public Optional<T> get(final UUID uuid) {
         return Optional.ofNullable(events.get(uuid));

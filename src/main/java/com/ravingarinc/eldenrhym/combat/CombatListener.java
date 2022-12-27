@@ -3,9 +3,11 @@ package com.ravingarinc.eldenrhym.combat;
 import com.ravingarinc.eldenrhym.EldenRhym;
 import com.ravingarinc.eldenrhym.api.ModuleListener;
 import org.bukkit.Material;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.block.Action;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.EquipmentSlot;
@@ -34,35 +36,45 @@ public class CombatListener extends ModuleListener {
             return;
         }
         final UUID uuid = player.getUniqueId();
-        if (manager.isBlocking(uuid) || manager.isDodging(uuid)) {
+        if (manager.justDodged(uuid) || manager.isBlocking(uuid) || manager.isDodging(uuid)) {
             return;
         }
         manager.queueDodgeEvent(player);
     }
 
-    @EventHandler(ignoreCancelled = true)
+    @EventHandler
     public void onBlockEvent(final PlayerInteractEvent event) {
-        if (event.getHand() != EquipmentSlot.OFF_HAND) {
-            return;
-        }
-        if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+        if (event.getHand() == EquipmentSlot.OFF_HAND) {
             final Player player = event.getPlayer();
-            final ItemStack stack = event.getItem();
-            //todo check if u need to check for a cooldown here
-            if (player.isInsideVehicle() || !player.isBlocking()) {
+            final ItemStack item = event.getItem();
+            if (item == null) {
                 return;
             }
-            if (stack == null || stack.getType() != Material.SHIELD) {
-                return;
+            final Material type = item.getType();
+            if (type == Material.SHIELD && !player.hasCooldown(Material.SHIELD)) {
+                manager.handleBlockInteraction(player);
             }
+        }
+    }
 
-            final UUID uuid = player.getUniqueId();
-            //final PlayerData data = PlayerData.get(uuid);
-            //data.getRPG().getStamina() > 0 &&
-            if (!manager.isDodging(uuid)) {
-                EldenRhym.logIfDebug(() -> "Listener is now queueing");
-                manager.queueBlockEvent(player);
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGH)
+    public void onDamageEvent(final EntityDamageByEntityEvent event) {
+        double damage = event.getDamage();
+        if (event.getEntity() instanceof LivingEntity defender) {
+            if (defender instanceof Player player) {
+                if (player.isBlocking()) {
+                    damage = manager.handleBlockEvent(player, event.getCause(), damage);
+                } else {
+                    damage = manager.handleDodgeEvent(player, event.getCause(), damage);
+                }
+            } else { // In case of just a Living Entity since they can dodge too
+                damage = manager.handleDodgeEvent(defender, event.getCause(), damage);
             }
+        }
+        if (damage > 0) {
+            event.setDamage(damage);
+        } else {
+            event.setCancelled(true);
         }
     }
 }

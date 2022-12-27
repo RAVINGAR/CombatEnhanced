@@ -33,6 +33,7 @@ public abstract class EventRunner<T extends CombatEvent<?>> extends BukkitRunnab
         }
     }
 
+
     public void remove(@NotNull final T event) {
         events.remove(event);
     }

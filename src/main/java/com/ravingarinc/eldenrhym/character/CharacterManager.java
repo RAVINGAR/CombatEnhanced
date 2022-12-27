@@ -1,27 +1,38 @@
 package com.ravingarinc.eldenrhym.character;
 
 import com.ravingarinc.eldenrhym.EldenRhym;
+import com.ravingarinc.eldenrhym.api.AsynchronousException;
 import com.ravingarinc.eldenrhym.api.Module;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitScheduler;
 import org.jetbrains.annotations.Async;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.logging.Level;
 
 public class CharacterManager extends Module {
     private final Map<UUID, CharacterPlayer> playerMap;
     private final Map<UUID, CharacterMonster> monsterMap;
+    private final BukkitScheduler scheduler;
+    private EntityReaper reaper;
 
     public CharacterManager(final EldenRhym plugin) {
         super(CharacterManager.class, plugin);
-        this.playerMap = new HashMap<>();
-        this.monsterMap = new HashMap<>();
+        this.playerMap = new ConcurrentHashMap<>();
+        this.monsterMap = new ConcurrentHashMap<>();
+        this.scheduler = plugin.getServer().getScheduler();
     }
 
     /**
@@ -40,6 +51,22 @@ public class CharacterManager extends Module {
             playerMap.put(uuid, player);
         }
         return player;
+    }
+
+    public void removePlayer(@NotNull final Player entity) {
+        scheduler.runTaskAsynchronously(plugin, () -> playerMap.remove(entity.getUniqueId()));
+    }
+
+    public void removeMonster(@NotNull final Monster entity) {
+        scheduler.runTaskAsynchronously(plugin, () -> monsterMap.remove(entity.getUniqueId()));
+    }
+
+    public void removeEntity(@NotNull final LivingEntity entity) {
+        if (entity instanceof Player player) {
+            removePlayer(player);
+        } else if (entity instanceof Monster monster) {
+            removeMonster(monster);
+        }
     }
 
     /**
@@ -80,12 +107,30 @@ public class CharacterManager extends Module {
 
     @Override
     protected void reload() {
+        reaper.cancel();
 
+        final List<LivingEntity> loadedEntities = new ArrayList<>();
+        playerMap.forEach((uuid, character) -> loadedEntities.add(character.getEntity()));
+        monsterMap.forEach((uuid, character) -> loadedEntities.add(character.getEntity()));
+
+        playerMap.clear();
+        monsterMap.clear();
+
+        loadedEntities.forEach(entity -> {
+            if (entity instanceof Player player) {
+                getPlayer(player);
+            } else if (entity instanceof Monster monster) {
+                if (!entity.isDead() && entity.isValid()) {
+                    getMonster(monster);
+                }
+            }
+        });
     }
 
     @Override
     protected void load() {
-
+        reaper = new EntityReaper();
+        reaper.runTaskTimer(plugin, 20L, 5L);
     }
 
     @Override
@@ -93,14 +138,36 @@ public class CharacterManager extends Module {
 
     }
 
-    private class MonsterReaper implements Runnable {
+    public void queueForRemoval(final LivingEntity entity) {
+        if (reaper != null) {
+            this.reaper.queueForRemoval(entity);
+        }
+    }
 
-        public MonsterReaper() {
+    private class EntityReaper extends BukkitRunnable {
+        private final Queue<LivingEntity> toRemove;
+
+        private EntityReaper() {
+            toRemove = new ConcurrentLinkedQueue<>();
+        }
+
+        public void queueForRemoval(final LivingEntity entity) {
+            toRemove.add(entity);
         }
 
         @Override
         public void run() {
+            monsterMap.values().forEach(entity -> {
+                try {
+                    if (!entity.isValid()) {
+                        toRemove.add(entity.getEntity());
+                    }
+                } catch (final AsynchronousException e) {
+                    EldenRhym.log(Level.SEVERE, "Encountered issue in EntityReaper!", e);
+                }
 
+            });
+            new ArrayList<>(toRemove).forEach(CharacterManager.this::removeEntity);
         }
     }
 }

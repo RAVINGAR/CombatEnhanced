@@ -18,7 +18,6 @@ import javax.annotation.concurrent.ThreadSafe;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
-import java.util.logging.Level;
 
 /**
  * Represents a thread safe entity that wraps bukkit api such that it can be called in async computations.
@@ -36,6 +35,7 @@ public abstract class CharacterEntity<T extends LivingEntity> {
         this.plugin = plugin;
         this.scheduler = plugin.getServer().getScheduler();
         this.characterManager = plugin.getModule(CharacterManager.class);
+
     }
 
     public T getEntity() {
@@ -96,36 +96,22 @@ public abstract class CharacterEntity<T extends LivingEntity> {
         return vector;
     }
 
+    @Async.Execute
+    @Blocking
+    public boolean isValid() throws AsynchronousException {
+        return executeBlockingSyncComputation(entity::isValid);
+    }
+
     /**
      * Executes a computation on the main thread, then waits for the result to be returned. Can be used in an
      * asynchronous environment.
      */
     @Async.Execute
     @Blocking
-    public <V> V executeBlockingSyncComputation(final Callable<V> callable) throws AsynchronousException {
+    public final <V> V executeBlockingSyncComputation(final Callable<V> callable) throws AsynchronousException {
         final TaskCallback<V> callback = new TaskCallback<>(callable);
-        scheduler.runTask(plugin, callback);
+        scheduler.scheduleSyncDelayedTask(plugin, callback);
         return callback.get();
-    }
-
-    /**
-     * Execute a sync computation from the provided callable on a new asynchronous thread. Once the sync
-     * computation has completed, consume the value on the asynchronous thread via the provided consumer.
-     *
-     * @param callable The callable to be executed as sync
-     * @param consumer The consumer to be executed as async
-     * @param <V>      The type parameter
-     * @throws AsynchronousException if an issue occurs
-     */
-    @NonBlocking
-    public <V> void executeSyncComputation(final Callable<V> callable, final Consumer<V> consumer) throws AsynchronousException {
-        scheduler.runTaskAsynchronously(plugin, () -> {
-            try {
-                consumer.accept(executeBlockingSyncComputation(callable)); // n/a
-            } catch (final AsynchronousException e) {
-                EldenRhym.log(Level.SEVERE, "Encountered AsynchronousException!", e);
-            }
-        });
     }
 
 
@@ -136,7 +122,7 @@ public abstract class CharacterEntity<T extends LivingEntity> {
      */
     @Async.Execute
     @NonBlocking
-    public void executeAsyncComputation(final Runnable runnable) {
+    public final void executeAsyncComputation(final Runnable runnable) {
         scheduler.runTaskAsynchronously(plugin, runnable);
     }
 
@@ -145,8 +131,8 @@ public abstract class CharacterEntity<T extends LivingEntity> {
      *
      * @param consumer The consumer
      */
-    public void applySynchronously(final Consumer<CharacterEntity<T>> consumer) {
-        scheduler.runTask(plugin, () -> consumer.accept(this));
+    public final void applySynchronously(final Consumer<CharacterEntity<T>> consumer) {
+        scheduler.scheduleSyncDelayedTask(plugin, () -> consumer.accept(this));
     }
 
     @Override

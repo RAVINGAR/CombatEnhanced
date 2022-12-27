@@ -1,6 +1,8 @@
 combat-features:
-  #All time settings are measured in milliseconds
+  # All time settings are measured in milliseconds
   debug: true
+  # The time before a player can attempt to use an ability again. (Prevents spamming)
+  global-cooldown: 50
   counter-attack:
     # Counter attacks are performed after a successful parry or block if the attacker lands a hit within a given window
     # The counter attack uses an MMOCore skill based on (todo decide - the item they are using, the class?)
@@ -26,13 +28,18 @@ combat-features:
     # - have no stamina
     enabled: true
     #The warmup before a player can dodge. The dodge can be interrupted if the player takes damage in this time
-    warmup: 100
+    warmup: 0
     #For how long is the entity dodging
-    duration: 300
+    duration: 500
     #How strong the dodge is.
     strength: 0.5
     #How much is damage mitigated by - change this to be based on an MMOItems stat later
     mitigation: 0.6
+    # Which damage causes apply to a dodge event. See list here https://hub.spigotmc.org/javadocs/spigot/org/bukkit/event/entity/EntityDamageEvent.DamageCause.html
+    applicable-damage-causes:
+      - ENTITY_ATTACK
+      - ENTITY_SWEEP_ATTACK
+      - PROJECTILE
   block:
     # When a player blocks, a block event is queued which has an expiry time of the specified duration
     # If an attack is made against a player who is blocking, if their block has not expired, then damage is mitigated
@@ -43,6 +50,17 @@ combat-features:
     # - if they are dodging
     enabled: true
     # the duration until a block expires
-    duration: 600
-    #How much is damage mitigated by - change this to be based on an MMOItems stat later
-    mitigation: 1.0
+    duration: 750
+    # On a successful block how much damage is mitigated
+    success-mitigation: 1.0
+    # On a failed block how much damage is mitigated. (This means even if a player is still blocking they can take damage)
+    fail-mitigation: 0.5
+    # If a shield block fails, how long is the cooldown
+    cooldown: 500
+    # Which damage causes apply to a block event. See list here https://hub.spigotmc.org/javadocs/spigot/org/bukkit/event/entity/EntityDamageEvent.DamageCause.html
+    applicable-damage-causes:
+      - ENTITY_ATTACK
+      - ENTITY_SWEEP_ATTACK
+      - BLOCK_EXPLOSION
+      - ENTITY_EXPLOSION
+      - PROJECTILE
