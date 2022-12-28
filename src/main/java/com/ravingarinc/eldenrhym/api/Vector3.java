@@ -1,26 +1,39 @@
 package com.ravingarinc.eldenrhym.api;
 
+import org.bukkit.Location;
 import org.bukkit.util.Vector;
-import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.concurrent.ThreadSafe;
 import javax.vecmath.Vector3d;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Vector safe to use in asynchronous applications. Also has useful methods.
  */
 @ThreadSafe
 public class Vector3 extends Vector3d {
-    private static final DistanceCache DISTANCE_CACHE = new DistanceCache();
+    private final float yaw;
+    private final float pitch;
+
+    public Vector3(final Location location) {
+        this(location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
+    }
+
+    public Vector3(final Vector vector) {
+        this(vector.getX(), vector.getY(), vector.getZ(), 0, 0);
+    }
 
     public Vector3() {
-        super();
+        this(0, 0, 0, 0, 0);
     }
 
     public Vector3(final double x, final double y, final double z) {
+        this(x, y, z, 0f, 0f);
+    }
+
+    public Vector3(final double x, final double y, final double z, final float yaw, final float pitch) {
         super(x, y, z);
+        this.yaw = yaw;
+        this.pitch = pitch;
     }
 
     /**
@@ -31,7 +44,31 @@ public class Vector3 extends Vector3d {
      * @return The distance
      */
     public double distance(final Vector3 to) {
-        return DISTANCE_CACHE.distance(this, to);
+        return Math.sqrt(square(this.x - to.x) + square(this.y - to.y) + square(this.z - to.z));
+    }
+
+    private double square(final double num) {
+        return num * num;
+    }
+
+    /**
+     * Calculates direction based on yaw / pitch value. Yaw and pitch may not be set in all cases.
+     *
+     * @return The direction.
+     */
+    public Vector3 getDirection() {
+        final Vector3 vector = new Vector3();
+        final double rotX = yaw;
+        final double rotY = pitch;
+
+        vector.setY(-Math.sin(Math.toRadians(rotY)));
+
+        final double xz = Math.cos(Math.toRadians(rotY));
+
+        vector.setX(-xz * Math.sin(Math.toRadians(rotX)));
+        vector.setZ(xz * Math.cos(Math.toRadians(rotX)));
+
+        return vector;
     }
 
     /**
@@ -43,22 +80,8 @@ public class Vector3 extends Vector3d {
         return new Vector(this.getX(), this.getY(), this.getZ());
     }
 
-    @ThreadSafe
-    private static class DistanceCache {
-
-        private final Map<Double, Double> cachedCalculations;
-
-        public DistanceCache() {
-            this.cachedCalculations = new HashMap<>();
-        }
-
-        public double distance(@NotNull final Vector3 start, @NotNull final Vector3 end) {
-            final double preVal = square(start.x - end.x) + square(start.y - end.y) + square(start.z - end.z);
-            return cachedCalculations.computeIfAbsent(preVal, Math::sqrt);
-        }
-
-        private double square(final double num) {
-            return num * num;
-        }
+    @Override
+    public String toString() {
+        return "x = " + x + ", y = " + y + ", z = " + z;
     }
 }

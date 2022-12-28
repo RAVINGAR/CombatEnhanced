@@ -2,17 +2,20 @@ package com.ravingarinc.eldenrhym.combat.event;
 
 import com.ravingarinc.eldenrhym.api.AsynchronousException;
 import com.ravingarinc.eldenrhym.character.CharacterEntity;
+import org.bukkit.event.Event;
 import org.jetbrains.annotations.Async;
 import org.jetbrains.annotations.Blocking;
 
-import java.util.Objects;
 import java.util.concurrent.Callable;
 
 /**
  * An event relating to a given entity and results in a Future task. The result of the Future
  * if true means that this event is interrupted and should be removed from the runner.
+ *
+ * @param <T> The type of entity that is applicable to this event
+ * @param <E> The type of Bukkit event this event reacts to
  */
-public abstract class CombatEvent<T extends CharacterEntity<?>> implements Callable<Boolean> {
+public abstract class CombatEvent<T extends CharacterEntity<?>, E extends Event> implements Callable<Boolean> {
     protected final T entity;
     private final long expireTime;
     private final Object lock = new Object();
@@ -88,12 +91,12 @@ public abstract class CombatEvent<T extends CharacterEntity<?>> implements Calla
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        final CombatEvent<?> that = (CombatEvent<?>) o;
+        final CombatEvent<?, ?> that = (CombatEvent<?, ?>) o;
         return entity.equals(that.entity);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(entity);
+        return entity.hashCode();
     }
 }

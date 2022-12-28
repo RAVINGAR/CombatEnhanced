@@ -1,7 +1,6 @@
 package com.ravingarinc.eldenrhym.file;
 
 import com.ravingarinc.eldenrhym.EldenRhym;
-import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -35,20 +34,15 @@ public class ConfigFile {
         } catch (final IOException e) {
             EldenRhym.log(Level.SEVERE, "Encountered issue loading default configuration for file '%s'!", name, e);
         }
-        if (!file.exists()) {
-            plugin.saveResource(name, false);
-        }
+        config.options().copyDefaults(true);
+        saveConfig();
     }
 
-    public void reloadConfig() {
-        try {
-            config.load(file);
-        } catch (IOException | InvalidConfigurationException e) {
-            EldenRhym.log(Level.SEVERE, "Encountered error reloading config; " + name + "\n" + e.getMessage());
-        }
+    public final void reloadConfig() {
+        saveDefaultConfig();
     }
 
-    public void saveConfig() {
+    public final void saveConfig() {
         try {
             config.save(file);
         } catch (final IOException e) {

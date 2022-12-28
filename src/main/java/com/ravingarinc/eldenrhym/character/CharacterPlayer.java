@@ -1,6 +1,7 @@
 package com.ravingarinc.eldenrhym.character;
 
 import com.ravingarinc.eldenrhym.EldenRhym;
+import com.ravingarinc.eldenrhym.api.AsyncHandler;
 import com.ravingarinc.eldenrhym.api.AsynchronousException;
 import org.bukkit.FluidCollisionMode;
 import org.bukkit.Location;
@@ -25,11 +26,14 @@ public class CharacterPlayer extends CharacterEntity<Player> {
     @Async.Execute
     @Blocking
     public Optional<CharacterEntity<?>> getTarget(final double maxDistance) throws AsynchronousException {
-        final Optional<Entity> optTarget = executeBlockingSyncComputation(() -> {
+        final Optional<Entity> optTarget = AsyncHandler.executeBlockingSyncComputation(() -> {
             final Location location = entity.getEyeLocation();
             final Predicate<Entity> predicate = entity -> {
                 if (entity instanceof LivingEntity le) {
-                    return !le.isDead() && le.getHealth() != 0;
+                    if (le.equals(this.entity)) {
+                        return false;
+                    }
+                    return !le.isDead() && le.getHealth() > 0;
                 }
                 return false;
             };
@@ -45,6 +49,6 @@ public class CharacterPlayer extends CharacterEntity<Player> {
     @Blocking
     @Async.Execute
     public boolean isBlocking() throws AsynchronousException {
-        return executeBlockingSyncComputation(entity::isBlocking);
+        return AsyncHandler.executeBlockingSyncComputation(entity::isBlocking);
     }
 }

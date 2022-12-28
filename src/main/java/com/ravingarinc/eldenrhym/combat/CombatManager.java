@@ -1,37 +1,30 @@
 package com.ravingarinc.eldenrhym.combat;
 
 import com.ravingarinc.eldenrhym.EldenRhym;
-import com.ravingarinc.eldenrhym.api.AsynchronousException;
+import com.ravingarinc.eldenrhym.api.BukkitApi;
 import com.ravingarinc.eldenrhym.api.Module;
-import com.ravingarinc.eldenrhym.character.CharacterEntity;
+import com.ravingarinc.eldenrhym.api.Vector3;
 import com.ravingarinc.eldenrhym.character.CharacterManager;
 import com.ravingarinc.eldenrhym.combat.event.DodgeEvent;
 import com.ravingarinc.eldenrhym.combat.event.PlayerBlockEvent;
-import com.ravingarinc.eldenrhym.combat.event.TargetDodgeEvent;
-import com.ravingarinc.eldenrhym.combat.runner.CombatRunner;
+import com.ravingarinc.eldenrhym.combat.runner.BlockRunner;
+import com.ravingarinc.eldenrhym.combat.runner.DodgeRunner;
 import com.ravingarinc.eldenrhym.combat.runner.IdentifierRunner;
 import com.ravingarinc.eldenrhym.file.ConfigManager;
-import org.bukkit.EntityEffect;
-import org.bukkit.Material;
-import org.bukkit.Sound;
+import com.ravingarinc.eldenrhym.file.Settings;
 import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
-import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.scheduler.BukkitScheduler;
-import org.jetbrains.annotations.Async;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.concurrent.ThreadSafe;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.logging.Level;
 
 /**
- * Manages combat interactions and computations. Any methods marked with Async.Execute means that the method is
+ * Manages combat interactions and computations. Any methods marked with AsyncHandler.Execute means that the method is
  * called from an asynchronous thread.
  */
 @ThreadSafe
@@ -40,11 +33,10 @@ public class CombatManager extends Module {
     private final Settings settings;
     private final BukkitScheduler scheduler;
     private final Map<UUID, Long> lastBlocks;
-    private final Map<UUID, Long> lastDodges; //todo remove UUIDs when player's log out or die, and same for mobs
+    private final Map<UUID, Long> lastDodges;
     private CharacterManager characterManager;
-    private CombatRunner runner;
-    private IdentifierRunner<PlayerBlockEvent> blockRunner;
-    private IdentifierRunner<DodgeEvent> dodgeRunner;
+    private IdentifierRunner<PlayerBlockEvent, EntityDamageByEntityEvent> blockRunner;
+    private IdentifierRunner<DodgeEvent, EntityDamageByEntityEvent> dodgeRunner;
 
     public CombatManager(final EldenRhym plugin) {
         super(CombatManager.class, plugin, ConfigManager.class, CharacterManager.class);
@@ -89,19 +81,24 @@ public class CombatManager extends Module {
     public void queueBlockEvent(@NotNull final Player entity) {
         final long time = System.currentTimeMillis();
         lastBlocks.put(entity.getUniqueId(), time);
-        scheduler.runTaskAsynchronously(plugin, () -> blockRunner.add(new PlayerBlockEvent(characterManager.getPlayer(entity), time, settings.blockDuration)));
+        scheduler.runTaskAsynchronously(plugin, () -> blockRunner.add(new PlayerBlockEvent(characterManager.getPlayer(entity), time, settings)));
     }
 
-    public void queueDodgeEvent(@NotNull final Player entity) {
-        final long time = System.currentTimeMillis();
-        lastDodges.put(entity.getUniqueId(), time);
-        scheduler.runTaskAsynchronously(plugin, () -> queueDodgeEvent(characterManager.getPlayer(entity), time));
+    public void queueDodgeEvent(@NotNull final LivingEntity entity) {
+        final long start = System.currentTimeMillis();
+        lastDodges.put(entity.getUniqueId(), start);
+        final Vector3 location = new Vector3(entity.getLocation());
+        scheduler.runTaskAsynchronously(plugin, () ->
+                characterManager.getCharacter(entity).ifPresent(character ->
+                        dodgeRunner.add(new DodgeEvent(character, location, start, settings))));
     }
 
-    public void queueDodgeEvent(@NotNull final Monster entity) {
-        final long time = System.currentTimeMillis();
-        lastDodges.put(entity.getUniqueId(), time);
-        scheduler.runTaskAsynchronously(plugin, () -> queueDodgeEvent(characterManager.getMonster(entity), time));
+    @BukkitApi
+    public void handle(final EntityDamageByEntityEvent event) {
+        final UUID uuid = event.getEntity().getUniqueId();
+        if (!blockRunner.handle(uuid, event)) {
+            dodgeRunner.handle(uuid, event);
+        }
     }
 
     public void handleBlockInteraction(final Player player) {
@@ -116,98 +113,9 @@ public class CombatManager extends Module {
         }, 6L);
     }
 
-    /**
-     * Handle a block event on an EntityDamageEvent only if the entity is blocking
-     *
-     * @param defender    The damage taker in the event
-     * @param cause       The damage cause
-     * @param eventDamage The original event damage
-     * @return The new damage of the event. If 0, the event should be cancelled
-     */
-    public double handleBlockEvent(final Player defender, final DamageCause cause, final double eventDamage) {
-        double postDamage = eventDamage;
-        if (settings.blockDamageCauses.contains(cause)) {
-            final double mitigation;
-            if (isBlocking(defender.getUniqueId())) {
-                // defender.sendMessage(ChatColor.GRAY + "You blocked the attack!");
-                // attacker.sendMessage(ChatColor.RED + defender.getName() + " blocked the attack!");
-                defender.playSound(defender, Sound.ENTITY_ARROW_HIT_PLAYER, 1.0F, 1.0F);
-                mitigation = settings.blockSuccessMitigation;
-            } else {
-                defender.playSound(defender, Sound.ITEM_SHIELD_BREAK, 1.0F, 1.0F);
-                defender.setCooldown(Material.SHIELD, (int) (settings.blockCooldown / 1000 * 20));
-                mitigation = settings.blockFailMitigation;
-            }
-            postDamage *= (1.0 - mitigation);
-            if (postDamage > 0) {
-                damageEntity(defender, postDamage);
-            }
-        }
-        return postDamage;
-    }
-
-    /**
-     * Handle a dodge event on an EntityDamageEvent only if the entity is dodging
-     *
-     * @param defender    The damage taker in the event
-     * @param cause       The damage cause
-     * @param eventDamage The original event damage
-     * @return The new damage of the event. If 0, the event should be cancelled
-     */
-    public double handleDodgeEvent(final LivingEntity defender, final DamageCause cause, final double eventDamage) {
-        double postDamage = eventDamage;
-        if (settings.dodgeDamageCauses.contains(cause)) {
-            if (isDodging(defender.getUniqueId())) {
-                // defender.sendMessage(ChatColor.RED + "You dodged the attack!");
-                // attacker.sendMessage(ChatColor.RED + defender.getName() + " dodged the attack!");
-                if (defender instanceof Player player) {
-                    player.playSound(player, Sound.ENTITY_ARROW_HIT_PLAYER, 1.0F, 1.0F);
-                }
-                postDamage *= (1.0 - settings.dodgeMitigation);
-            }
-        }
-        return postDamage;
-    }
-
-    @Async.Execute
-    private void queueDodgeEvent(final CharacterEntity<?> character, final long start) {
-        try {
-            character.getTarget(8)
-                    .ifPresentOrElse((target) ->
-                                    dodgeRunner.add(new TargetDodgeEvent(character, target, start, settings.dodgeWarmup, settings.dodgeDuration, settings.dodgeStrength)),
-                            () -> dodgeRunner.add(new DodgeEvent(character, start, settings.dodgeWarmup, settings.dodgeDuration, settings.dodgeStrength)));
-        } catch (final AsynchronousException e) {
-            EldenRhym.log(Level.SEVERE, "Encountered issue adding dodge event!", e);
-        }
-    }
-
-    public void damageEntity(final LivingEntity target, final double originalDamage) {
-        if (target.isDead() || (target.getHealth() <= 0)) {
-            return;
-        }
-        double damage = originalDamage;
-
-        final double oldShield = target.getAbsorptionAmount();
-        double newShield = oldShield - damage;
-        if (newShield < 0) {
-            newShield = 0;
-        }
-        damage -= oldShield - newShield;
-        final double oldHealth = target.getHealth();
-        double newHealth = oldHealth - damage;
-        if (newHealth < 0) {
-            newHealth = 0;
-        }
-
-        target.setHealth(newHealth);
-        target.setAbsorptionAmount(newShield);
-        target.playEffect(EntityEffect.HURT);
-    }
-
 
     @Override
     protected void reload() {
-        runner.cancel();
         dodgeRunner.cancel();
         blockRunner.cancel();
     }
@@ -215,11 +123,9 @@ public class CombatManager extends Module {
     @Override
     protected void load() {
         characterManager = plugin.getModule(CharacterManager.class);
-        runner = new CombatRunner();
-        dodgeRunner = new IdentifierRunner<>();
-        blockRunner = new IdentifierRunner<>();
+        dodgeRunner = new DodgeRunner(settings);
+        blockRunner = new BlockRunner(settings);
 
-        runner.runTaskTimerAsynchronously(plugin, 0, PERIOD);
         dodgeRunner.runTaskTimerAsynchronously(plugin, 5, PERIOD);
         blockRunner.runTaskTimerAsynchronously(plugin, 5, PERIOD);
     }
@@ -228,38 +134,10 @@ public class CombatManager extends Module {
     protected void shutdown() {
         dodgeRunner.cancel();
         blockRunner.cancel();
-        runner.cancel();
     }
 
     public Settings getSettings() {
         return settings;
     }
 
-    public static class Settings {
-
-        public long globalCooldown = 50;
-        public boolean counterEnabled = true;
-        public long counterStartTime = 100;
-        public long counterEndTime = 500;
-
-        public boolean parryEnabled = true;
-
-        public boolean dodgeEnabled = true;
-        public long dodgeWarmup = 100;
-        public long dodgeDuration = 300;
-        public float dodgeStrength = 0.5F;
-        public double dodgeMitigation = 0.5;
-
-        public List<DamageCause> dodgeDamageCauses = new ArrayList<>();
-
-        public boolean blockEnabled = true;
-        public long blockDuration = 600;
-
-        public double blockSuccessMitigation = 1.0;
-
-        public double blockFailMitigation = 0.5;
-        public long blockCooldown = 500;
-
-        public List<DamageCause> blockDamageCauses = new ArrayList<>();
-    }
 }

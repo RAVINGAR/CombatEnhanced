@@ -3,7 +3,6 @@ package com.ravingarinc.eldenrhym.combat;
 import com.ravingarinc.eldenrhym.EldenRhym;
 import com.ravingarinc.eldenrhym.api.ModuleListener;
 import org.bukkit.Material;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -59,22 +58,6 @@ public class CombatListener extends ModuleListener {
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGH)
     public void onDamageEvent(final EntityDamageByEntityEvent event) {
-        double damage = event.getDamage();
-        if (event.getEntity() instanceof LivingEntity defender) {
-            if (defender instanceof Player player) {
-                if (player.isBlocking()) {
-                    damage = manager.handleBlockEvent(player, event.getCause(), damage);
-                } else {
-                    damage = manager.handleDodgeEvent(player, event.getCause(), damage);
-                }
-            } else { // In case of just a Living Entity since they can dodge too
-                damage = manager.handleDodgeEvent(defender, event.getCause(), damage);
-            }
-        }
-        if (damage > 0) {
-            event.setDamage(damage);
-        } else {
-            event.setCancelled(true);
-        }
+        manager.handle(event);
     }
 }

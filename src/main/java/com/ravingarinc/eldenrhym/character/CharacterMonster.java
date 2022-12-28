@@ -1,6 +1,7 @@
 package com.ravingarinc.eldenrhym.character;
 
 import com.ravingarinc.eldenrhym.EldenRhym;
+import com.ravingarinc.eldenrhym.api.AsyncHandler;
 import com.ravingarinc.eldenrhym.api.AsynchronousException;
 import org.bukkit.entity.Monster;
 import org.jetbrains.annotations.Async;
@@ -18,7 +19,7 @@ public class CharacterMonster extends CharacterEntity<Monster> {
     @Async.Execute
     @Blocking
     public Optional<CharacterEntity<?>> getTarget(final double maxDistance) throws AsynchronousException {
-        final Optional<CharacterEntity<?>> optTarget = characterManager.getCharacter(executeBlockingSyncComputation(entity::getTarget));
+        final Optional<CharacterEntity<?>> optTarget = characterManager.getCharacter(AsyncHandler.executeBlockingSyncComputation(entity::getTarget));
         if (optTarget.isPresent()) {
             final CharacterEntity<?> target = optTarget.get();
             if (target.getLocation().distance(this.getLocation()) < maxDistance) {

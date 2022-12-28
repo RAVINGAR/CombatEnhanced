@@ -6,7 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Methods/constructors annotated with this means by default that they do use Bukkit API
+ * Methods/constructors annotated with this means by default that they do use Bukkit API.
  * and as such should be called from a synchronous thread.
  */
 @Retention(RetentionPolicy.CLASS)

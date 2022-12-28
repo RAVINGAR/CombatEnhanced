@@ -1,7 +1,6 @@
 package com.ravingarinc.eldenrhym.character;
 
 import com.ravingarinc.eldenrhym.EldenRhym;
-import com.ravingarinc.eldenrhym.api.AsynchronousException;
 import com.ravingarinc.eldenrhym.api.Module;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
@@ -20,7 +19,6 @@ import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.logging.Level;
 
 public class CharacterManager extends Module {
     private final Map<UUID, CharacterPlayer> playerMap;
@@ -130,7 +128,7 @@ public class CharacterManager extends Module {
     @Override
     protected void load() {
         reaper = new EntityReaper();
-        reaper.runTaskTimer(plugin, 20L, 5L);
+        reaper.runTaskTimer(plugin, 20L, 100L);
     }
 
     @Override
@@ -158,14 +156,10 @@ public class CharacterManager extends Module {
         @Override
         public void run() {
             monsterMap.values().forEach(entity -> {
-                try {
-                    if (!entity.isValid()) {
-                        toRemove.add(entity.getEntity());
-                    }
-                } catch (final AsynchronousException e) {
-                    EldenRhym.log(Level.SEVERE, "Encountered issue in EntityReaper!", e);
+                final LivingEntity livingEntity = entity.getEntity();
+                if (!livingEntity.isValid()) {
+                    toRemove.add(livingEntity);
                 }
-
             });
             new ArrayList<>(toRemove).forEach(CharacterManager.this::removeEntity);
         }

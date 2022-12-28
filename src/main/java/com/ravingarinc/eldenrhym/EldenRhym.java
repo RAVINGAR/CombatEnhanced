@@ -1,5 +1,6 @@
 package com.ravingarinc.eldenrhym;
 
+import com.ravingarinc.eldenrhym.api.AsyncHandler;
 import com.ravingarinc.eldenrhym.api.Module;
 import com.ravingarinc.eldenrhym.api.ModuleLoadException;
 import com.ravingarinc.eldenrhym.character.CharacterListener;
@@ -78,6 +79,7 @@ public final class EldenRhym extends JavaPlugin {
     @Override
     public void onEnable() {
         // Plugin startup logic
+        AsyncHandler.load(this);
         loadModules();
         validateLoad();
 

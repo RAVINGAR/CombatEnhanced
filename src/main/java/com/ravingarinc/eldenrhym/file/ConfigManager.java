@@ -32,7 +32,7 @@ public class ConfigManager extends Module {
         }
 
         final CombatManager manager = plugin.getModule(CombatManager.class);
-        final CombatManager.Settings settings = manager.getSettings();
+        final Settings settings = manager.getSettings();
 
         wrap(() -> section.getBoolean("debug", false)).ifPresent(b -> EldenRhym.debug = b);
         wrap(() -> section.getLong("global-cooldown")).ifPresent(b -> settings.globalCooldown = b);
@@ -69,6 +69,7 @@ public class ConfigManager extends Module {
             wrap(() -> child.getDouble("success-mitigation")).ifPresent(b -> settings.blockSuccessMitigation = b);
             wrap(() -> child.getDouble("fail-mitigation")).ifPresent(b -> settings.blockFailMitigation = b);
             wrap(() -> child.getLong("cooldown")).ifPresent(b -> settings.blockCooldown = b);
+            wrap(() -> child.getDouble("throw-strength")).ifPresent(b -> settings.blockThrowStrength = Float.parseFloat("" + b));
             wrap(() -> child.getStringList("applicable-damage-causes")).ifPresent(list ->
                     list.forEach(name -> convertDamageCause(name).ifPresent(cause -> settings.blockDamageCauses.add(cause))));
         })) {

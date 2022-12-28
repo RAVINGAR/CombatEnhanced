@@ -51,6 +51,8 @@ combat-features:
     enabled: true
     # the duration until a block expires
     duration: 750
+    # On a success / failed block, an entity is thrown back. How strong is the throw.
+    throw-strength: 0.5
     # On a successful block how much damage is mitigated
     success-mitigation: 1.0
     # On a failed block how much damage is mitigated. (This means even if a player is still blocking they can take damage)

@@ -13,7 +13,7 @@ public class CharacterListener extends ModuleListener {
     private CharacterManager characterManager;
     private CombatManager combatManager;
 
-    protected CharacterListener(final EldenRhym plugin) {
+    public CharacterListener(final EldenRhym plugin) {
         super(CharacterListener.class, plugin, CharacterManager.class, CombatManager.class);
     }
 

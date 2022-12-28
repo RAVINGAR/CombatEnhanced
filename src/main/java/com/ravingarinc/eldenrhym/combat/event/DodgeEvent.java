@@ -1,42 +1,48 @@
 package com.ravingarinc.eldenrhym.combat.event;
 
+import com.ravingarinc.eldenrhym.api.AsyncHandler;
 import com.ravingarinc.eldenrhym.api.AsynchronousException;
 import com.ravingarinc.eldenrhym.api.Vector3;
 import com.ravingarinc.eldenrhym.character.CharacterEntity;
+import com.ravingarinc.eldenrhym.file.Settings;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.jetbrains.annotations.Async;
 import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Represents a dodge event independent of a target entity
  */
-public class DodgeEvent extends CombatEvent<CharacterEntity<?>> {
+public class DodgeEvent extends CombatEvent<CharacterEntity<?>, EntityDamageByEntityEvent> {
+
+    protected final Settings settings;
+
     protected final long warmup;
-    protected final float strength;
 
     protected final AtomicBoolean dodging;
 
 
     protected Vector3 initialVelocity = new Vector3();
+    protected Vector3 location;
 
     public DodgeEvent(@NotNull final CharacterEntity<?> entity,
+                      final Vector3 location,
                       final long start,
-                      final long warmup,
-                      final long duration,
-                      final float strength) {
-        super(entity, start, warmup + duration);
-        this.warmup = warmup + start;
-        this.strength = strength;
+                      final Settings settings) {
+        super(entity, start, settings.dodgeWarmup + settings.dodgeDuration);
+        this.settings = settings;
+        this.warmup = start + settings.dodgeWarmup;
+        this.location = location;
         this.dodging = new AtomicBoolean(false);
     }
-
 
     @Override
     @Async.Execute
@@ -44,7 +50,7 @@ public class DodgeEvent extends CombatEvent<CharacterEntity<?>> {
     protected void tick() throws AsynchronousException {
         final long current = System.currentTimeMillis();
         if (dodging.get()) {
-            entity.applySynchronously((entity) -> spawnParticle(entity.getEntity().getLocation()));
+            AsyncHandler.applySynchronously(entity, (entity) -> spawnParticle(entity.getEntity().getLocation()));
         } else if (current > warmup) {
             initialVelocity = entity.getVelocity();
             if (initialVelocity.getY() > 0) {
@@ -53,8 +59,12 @@ public class DodgeEvent extends CombatEvent<CharacterEntity<?>> {
             }
             //Throw entity
             final Vector3 velocity = getDodge();
+            if (velocity == null) {
+                interrupt();
+                return;
+            }
             dodging.getAndSet(true);
-            entity.applySynchronously((entity) -> {
+            AsyncHandler.applySynchronously(entity, (entity) -> {
                 final LivingEntity livingEntity = entity.getEntity();
                 livingEntity.setVelocity(velocity.toBukkitVector());
                 final Location location = livingEntity.getLocation();
@@ -74,19 +84,53 @@ public class DodgeEvent extends CombatEvent<CharacterEntity<?>> {
 
     @Blocking
     @Async.Execute
+    @Nullable
     public Vector3 getDodge() throws AsynchronousException {
-        Vector3 direction = entity.getDirection();
-        direction.scale(-1);
+        Vector3 direction = location.getDirection();
+        final Vector3 postLoc = entity.getLocation();
+        final double d0 = postLoc.getX() - location.getX();
+        final double d1 = postLoc.getZ() - location.getZ();
+        final float strength = settings.dodgeStrength;
 
-        if (direction.length() < 1.0E-4D) {
-            direction = new Vector3();
+        if (d0 == 0 && d1 == 0) {
+            // case -> Player is not moving. Make them backpedal
+            if (direction.length() < 1.0E-4D) {
+                direction = new Vector3();
+            }
+            direction.scale(strength);
+            return new Vector3(
+                    initialVelocity.getX() / 2.0D - direction.getX(),
+                    initialVelocity.getY(),
+                    initialVelocity.getZ() / 2.0D - direction.getZ()
+            );
+        } else {
+            // case -> Player is currently moving
+            Vector3 movement = new Vector3(d0, 0.0, d1);
+            final double length = movement.length();
+            movement.normalize();
+            final double e0 = movement.getX() - direction.getX();
+            final double e1 = movement.getZ() - direction.getZ();
+            if (e0 > -0.05 && e0 < 0.05 && e1 > -0.05 && e1 < 0.05) {
+                // case -> Player is moving in the direction they are facing
+                //         we do not want a dodge
+                return null;
+            }
+            /*
+            for (; ((d0 * d0) + (d1 * d1)) < 1.0E-4D; d1 = (Math.random() - Math.random()) * 0.01D) {
+                d0 = (Math.random() - Math.random()) * 0.01D;
+            }
+            */
+            if (length < 1.0E-4D) {
+                movement = new Vector3();
+            }
+            movement.scale(-strength);
+
+            return new Vector3(
+                    initialVelocity.getX() / 2.0D - movement.getX(),
+                    initialVelocity.getY(),
+                    initialVelocity.getZ() / 2.0D - movement.getZ()
+            );
         }
-        direction.scale(strength);
-        return new Vector3(
-                initialVelocity.getX() / 2.0D - direction.getX(),
-                initialVelocity.getY(),
-                initialVelocity.getZ() / 2.0D - direction.getZ()
-        );
     }
 
     public boolean isDodging() {

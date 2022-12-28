@@ -1,6 +1,7 @@
 package com.ravingarinc.eldenrhym.combat.runner;
 
 import com.ravingarinc.eldenrhym.combat.event.CombatEvent;
+import org.bukkit.event.Event;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.Async;
 import org.jetbrains.annotations.Blocking;
@@ -13,13 +14,8 @@ import java.util.List;
 /**
  * Run asynchronously
  */
-public abstract class EventRunner<T extends CombatEvent<?>> extends BukkitRunnable {
+public abstract class EventRunner<T extends CombatEvent<?, E>, E extends Event> extends BukkitRunnable {
     private final Collection<T> events;
-    /*
-    TODO
-      We may need to store events as a SYNCHRONOUS object, since it must be accessed by a synchronous call
-      by identifiers
-     */
     private final List<T> toRemove;
 
     public EventRunner(final Collection<T> events) {
