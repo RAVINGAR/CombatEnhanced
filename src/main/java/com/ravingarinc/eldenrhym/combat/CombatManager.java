@@ -12,6 +12,8 @@ import com.ravingarinc.eldenrhym.combat.runner.DodgeRunner;
 import com.ravingarinc.eldenrhym.combat.runner.IdentifierRunner;
 import com.ravingarinc.eldenrhym.file.ConfigManager;
 import com.ravingarinc.eldenrhym.file.Settings;
+import org.bukkit.Material;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
@@ -30,6 +32,7 @@ import java.util.UUID;
 @ThreadSafe
 public class CombatManager extends Module {
     private static final long PERIOD = 2L;
+    final BlockData defaultData;
     private final Settings settings;
     private final BukkitScheduler scheduler;
     private final Map<UUID, Long> lastBlocks;
@@ -45,6 +48,7 @@ public class CombatManager extends Module {
 
         this.lastDodges = new HashMap<>();
         this.lastBlocks = new HashMap<>();
+        defaultData = plugin.getServer().createBlockData(Material.COBWEB);
     }
 
     public boolean justBlocked(final UUID uuid) {
@@ -90,7 +94,7 @@ public class CombatManager extends Module {
         final Vector3 location = new Vector3(entity.getLocation());
         scheduler.runTaskAsynchronously(plugin, () ->
                 characterManager.getCharacter(entity).ifPresent(character ->
-                        dodgeRunner.add(new DodgeEvent(character, location, start, settings))));
+                        dodgeRunner.add(new DodgeEvent(character, location, start, settings, defaultData))));
     }
 
     @BukkitApi

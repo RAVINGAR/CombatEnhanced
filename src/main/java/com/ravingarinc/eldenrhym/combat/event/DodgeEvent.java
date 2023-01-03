@@ -9,6 +9,7 @@ import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.jetbrains.annotations.Async;
@@ -30,20 +31,22 @@ public class DodgeEvent extends CombatEvent<CharacterEntity<?>, EntityDamageByEn
     protected final AtomicBoolean dodging;
 
     protected final int particleCount;
-
-    protected Vector3 initialVelocity = new Vector3();
+    protected final BlockData defaultData;
+    protected Vector3 initialVelocity;
     protected Vector3 location;
 
     public DodgeEvent(@NotNull final CharacterEntity<?> entity,
                       final Vector3 location,
                       final long start,
-                      final Settings settings) {
+                      final Settings settings, final BlockData data) {
         super(entity, start, settings.dodgeWarmup + settings.dodgeDuration);
+        this.initialVelocity = new Vector3();
         this.settings = settings;
         this.warmup = start + settings.dodgeWarmup;
         this.location = location;
         this.particleCount = settings.dodgeParticleCount;
         this.dodging = new AtomicBoolean(false);
+        this.defaultData = data;
     }
 
     @Override
@@ -81,7 +84,7 @@ public class DodgeEvent extends CombatEvent<CharacterEntity<?>, EntityDamageByEn
     }
 
     private void spawnParticle(final Location location) {
-        location.getWorld().spawnParticle(Particle.FALLING_DUST, location.add(0, 0.3, 0), particleCount, 0.15, 0.1, 0.15, 0.01, location.getBlock().getBlockData());
+        location.getWorld().spawnParticle(Particle.FALLING_DUST, location.add(0, 0.3, 0), particleCount, 0.15, 0.1, 0.15, 0.05, defaultData);
     }
 
     @Blocking
