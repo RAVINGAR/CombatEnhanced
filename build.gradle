@@ -170,9 +170,10 @@ bukkit {
     defaultPermission = 'FALSE' // 'TRUE', 'FALSE', 'OP' or 'NOT_OP'
 
     commands {
-        ereload {
+        rhymreload {
             description = 'Reloads the EldenRhym plugin'
-            usage = '/ereload'
+            usage = '/rhymreload'
+            permission = 'eldenrhym.reload'
         }
     }
 }

@@ -74,6 +74,7 @@ public final class EldenRhym extends JavaPlugin {
     public void onLoad() {
         logger = this.getLogger();
         //setup mmoitems here
+        EldenRhym.instance = this;
     }
 
     @Override
@@ -83,7 +84,7 @@ public final class EldenRhym extends JavaPlugin {
         loadModules();
         validateLoad();
 
-        getCommand("ereload").setExecutor(new ReloadCommand());
+        getCommand("rhymreload").setExecutor(new ReloadCommand());
     }
 
     private void loadModules() {
