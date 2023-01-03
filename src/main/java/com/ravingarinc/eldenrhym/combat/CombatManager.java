@@ -32,7 +32,7 @@ import java.util.UUID;
 @ThreadSafe
 public class CombatManager extends Module {
     private static final long PERIOD = 2L;
-    final BlockData defaultData;
+    private final BlockData defaultData;
     private final Settings settings;
     private final BukkitScheduler scheduler;
     private final Map<UUID, Long> lastBlocks;
@@ -48,7 +48,7 @@ public class CombatManager extends Module {
 
         this.lastDodges = new HashMap<>();
         this.lastBlocks = new HashMap<>();
-        defaultData = plugin.getServer().createBlockData(Material.COBWEB);
+        this.defaultData = plugin.getServer().createBlockData(Material.COBWEB);
     }
 
     public boolean justBlocked(final UUID uuid) {
