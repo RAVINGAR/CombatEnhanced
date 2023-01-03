@@ -9,6 +9,7 @@ import org.bukkit.EntityEffect;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -31,6 +32,9 @@ public class BlockRunner extends IdentifierRunner<PlayerBlockEvent, EntityDamage
             if (event.getDamager() instanceof LivingEntity livingAttacker) {
                 throwEntity(defender, livingAttacker, settings.blockThrowStrength);
                 livingAttacker.playEffect(EntityEffect.HURT);
+            } else if (event.getDamager() instanceof AbstractArrow arrow) {
+                defender.launchProjectile(arrow.getClass(), arrow.getVelocity().multiply(-0.5)).setDamage(arrow.getDamage() * 0.5);
+                arrow.remove();
             }
             handlePostEvent(event, defender, settings.blockSuccessMitigation);
             return true;

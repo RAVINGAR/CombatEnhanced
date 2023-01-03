@@ -29,6 +29,7 @@ public class DodgeEvent extends CombatEvent<CharacterEntity<?>, EntityDamageByEn
 
     protected final AtomicBoolean dodging;
 
+    protected final int particleCount;
 
     protected Vector3 initialVelocity = new Vector3();
     protected Vector3 location;
@@ -41,6 +42,7 @@ public class DodgeEvent extends CombatEvent<CharacterEntity<?>, EntityDamageByEn
         this.settings = settings;
         this.warmup = start + settings.dodgeWarmup;
         this.location = location;
+        this.particleCount = settings.dodgeParticleCount;
         this.dodging = new AtomicBoolean(false);
     }
 
@@ -79,7 +81,7 @@ public class DodgeEvent extends CombatEvent<CharacterEntity<?>, EntityDamageByEn
     }
 
     private void spawnParticle(final Location location) {
-        location.getWorld().spawnParticle(Particle.CLOUD, location.add(0, 0.3, 0), 5, 0.15, 0.1, 0.15, 0.01);
+        location.getWorld().spawnParticle(Particle.FALLING_DUST, location.add(0, 0.3, 0), particleCount, 0.15, 0.1, 0.15, 0.01, location.getBlock().getBlockData());
     }
 
     @Blocking

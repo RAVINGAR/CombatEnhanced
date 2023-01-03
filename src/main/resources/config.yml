@@ -3,22 +3,6 @@ combat-features:
   debug: true
   # The time before a player can attempt to use an ability again. (Prevents spamming)
   global-cooldown: 50
-  counter-attack:
-    # Counter attacks are performed after a successful parry or block if the attacker lands a hit within a given window
-    # The counter attack uses an MMOCore skill based on (todo decide - the item they are using, the class?)
-    enabled: true
-    # After a successful parry/block, a counter attack will only occur between the start-window and end-window
-    start-time: 100
-    end-time: 500
-  parry:
-    # For players without a shield, right-clicking. TODO decide EITHER or something else
-    # Option 1 - Players Right Click to Parry
-    #   Parry would behave similarly to a shield-block in that there is an expiration time. However that time would
-    #   be much shorter.
-    #
-    # Option 2 - Player Attack the Target at the same time they attack them
-    #  Only problem with this is that parrying becomes more passive and accidental
-    enabled: true
   dodge:
     # A player can dodge via pressing the F keybind (player swap hands). If the player is not in the air the player
     # will be 'thrown' in the direction they are moving. For the duration of the dodge they mitigate any targetted damage taken.
@@ -27,6 +11,8 @@ combat-features:
     # - are blocking
     # - have no stamina
     enabled: true
+    # Amount of particles to spawn during a dodge
+    particle-count: 5
     #The warmup before a player can dodge. The dodge can be interrupted if the player takes damage in this time
     warmup: 0
     #For how long is the entity dodging
@@ -57,7 +43,7 @@ combat-features:
     success-mitigation: 1.0
     # On a failed block how much damage is mitigated. (This means even if a player is still blocking they can take damage)
     fail-mitigation: 0.5
-    # If a shield block fails, how long is the cooldown
+    # If you run out of stamina and attempt to block, how long is the cooldown
     cooldown: 500
     # Which damage causes apply to a block event. See list here https://hub.spigotmc.org/javadocs/spigot/org/bukkit/event/entity/EntityDamageEvent.DamageCause.html
     applicable-damage-causes:

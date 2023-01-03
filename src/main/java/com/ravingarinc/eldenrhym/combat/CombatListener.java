@@ -30,6 +30,7 @@ public class CombatListener extends ModuleListener {
     @EventHandler(ignoreCancelled = true)
     public void onPlayerSwapHands(final PlayerSwapHandItemsEvent event) {
         event.setCancelled(true);
+
         final Player player = event.getPlayer();
         if (player.isBlocking() || player.isInsideVehicle() || player.getVelocity().getY() > 0) {
             return;

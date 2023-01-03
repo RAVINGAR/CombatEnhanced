@@ -52,7 +52,9 @@ public abstract class EventRunner<T extends CombatEvent<?, E>, E extends Event> 
                 toRemove.add(event);
             }
         });
-        toRemove.forEach(this::remove);
-        toRemove.clear();
+        if (!toRemove.isEmpty()) {
+            toRemove.forEach(this::remove);
+            toRemove.clear();
+        }
     }
 }

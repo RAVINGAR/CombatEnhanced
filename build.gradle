@@ -166,7 +166,7 @@ bukkit {
 
     // Other possible properties from plugin.yml (optional)
     author = 'RAVINGAR'
-    depend = ['MMOItems', 'MythicMobs', 'MythicLib']
+    depend = ['MMOItems', 'MythicLib']
     defaultPermission = 'FALSE' // 'TRUE', 'FALSE', 'OP' or 'NOT_OP'
 
     commands {

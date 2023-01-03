@@ -37,22 +37,9 @@ public class ConfigManager extends Module {
         wrap(() -> section.getBoolean("debug", false)).ifPresent(b -> EldenRhym.debug = b);
         wrap(() -> section.getLong("global-cooldown")).ifPresent(b -> settings.globalCooldown = b);
 
-        if (consumeSection(section, "counter-attack", (child) -> {
-            wrap(() -> child.getBoolean("enabled", false)).ifPresent(b -> settings.counterEnabled = b);
-            wrap(() -> child.getLong("start-time")).ifPresent(b -> settings.counterStartTime = b);
-            wrap(() -> child.getLong("end-time")).ifPresent(b -> settings.counterEndTime = b);
-        })) {
-            EldenRhym.log(Level.WARNING, "config.yml is missing counter-attack section");
-        }
-
-        if (consumeSection(section, "parry", (child) -> {
-            wrap(() -> child.getBoolean("enabled", false)).ifPresent(b -> settings.parryEnabled = b);
-        })) {
-            EldenRhym.log(Level.WARNING, "config.yml is missing parry section");
-        }
-
         if (consumeSection(section, "dodge", (child) -> {
             wrap(() -> child.getBoolean("enabled", false)).ifPresent(b -> settings.dodgeEnabled = b);
+            wrap(() -> child.getInt("particle-count")).ifPresent(b -> settings.dodgeParticleCount = b);
             wrap(() -> child.getLong("warmup")).ifPresent(b -> settings.dodgeWarmup = b);
             wrap(() -> child.getLong("duration")).ifPresent(b -> settings.dodgeDuration = b);
             wrap(() -> child.getDouble("strength")).ifPresent(b -> settings.dodgeStrength = Float.parseFloat("" + b));
