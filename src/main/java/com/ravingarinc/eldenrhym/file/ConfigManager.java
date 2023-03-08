@@ -42,6 +42,7 @@ public class ConfigManager extends Module {
             wrap(() -> child.getInt("particle-count")).ifPresent(b -> settings.dodgeParticleCount = b);
             wrap(() -> child.getLong("warmup")).ifPresent(b -> settings.dodgeWarmup = b);
             wrap(() -> child.getLong("duration")).ifPresent(b -> settings.dodgeDuration = b);
+            wrap(() -> child.getInt("stamina-cost")).ifPresent(b -> settings.dodgeStaminaCost = b);
             wrap(() -> child.getDouble("strength")).ifPresent(b -> settings.dodgeStrength = Float.parseFloat("" + b));
             wrap(() -> child.getDouble("mitigation")).ifPresent(b -> settings.dodgeMitigation = b);
             wrap(() -> child.getStringList("applicable-damage-causes")).ifPresent(list ->
@@ -54,7 +55,9 @@ public class ConfigManager extends Module {
             wrap(() -> child.getBoolean("enabled", false)).ifPresent(b -> settings.blockEnabled = b);
             wrap(() -> child.getLong("duration")).ifPresent(b -> settings.blockDuration = b);
             wrap(() -> child.getDouble("success-mitigation")).ifPresent(b -> settings.blockSuccessMitigation = b);
+            wrap(() -> child.getInt("success-stamina-cost")).ifPresent(b -> settings.successBlockCost = b);
             wrap(() -> child.getDouble("fail-mitigation")).ifPresent(b -> settings.blockFailMitigation = b);
+            wrap(() -> child.getInt("fail-stamina-cost")).ifPresent(b -> settings.failBlockCost = b);
             wrap(() -> child.getLong("cooldown")).ifPresent(b -> settings.blockCooldown = b);
             wrap(() -> child.getDouble("throw-strength")).ifPresent(b -> settings.blockThrowStrength = Float.parseFloat("" + b));
             wrap(() -> child.getStringList("applicable-damage-causes")).ifPresent(list ->

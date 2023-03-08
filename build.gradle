@@ -26,7 +26,7 @@ repositories {
 
     maven {
         name 'phoenix-repo'
-        url 'https://nexus.phoenixdvpt.fr/repository/maven-public/'
+        url 'https://nexus.phoenixdevt.fr/repository/maven-public/'
         content {
             includeGroup 'io.lumine'
             includeGroup 'net.Indyuce'
@@ -39,14 +39,23 @@ repositories {
             includeGroup 'com.comphenix.protocol'
         }
     }
+
+    maven {
+        name 'heroes-repo'
+        url 'https://nexus.hc.to/content/repositories/pub_releases'
+        content {
+            includeGroup 'com.herocraftonline.heroes'
+        }
+    }
 }
 
 dependencies {
     implementation 'org.jetbrains:annotations:23.1.0'
     bukkitLibrary 'javax.vecmath:vecmath:1.5.2'
     compileOnly 'org.spigotmc:spigot-api:1.18.2-R0.1-SNAPSHOT'
-    compileOnly 'net.Indyuce:MMOItems-API:6.8.3-SNAPSHOT'
-    compileOnly 'io.lumine:MythicLib-dist:1.4.2-SNAPSHOT'
+    compileOnly 'com.herocraftonline.heroes:Heroes:1.9.30-RELEASE'
+    compileOnly 'net.Indyuce:MMOItems-API:6.9.2-SNAPSHOT'
+    //compileOnly 'io.lumine:MythicLib-dist:1.4.2-SNAPSHOT'
     compileOnly 'com.comphenix.protocol:ProtocolLib:4.7.0'
     testImplementation 'org.jetbrains:annotations:23.1.0'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0'
@@ -166,7 +175,7 @@ bukkit {
 
     // Other possible properties from plugin.yml (optional)
     author = 'RAVINGAR'
-    depend = ['MMOItems', 'MythicLib']
+    softDepend = ['MMOItems', 'Heroes']
     defaultPermission = 'FALSE' // 'TRUE', 'FALSE', 'OP' or 'NOT_OP'
 
     commands {

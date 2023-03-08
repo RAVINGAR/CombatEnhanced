@@ -8,6 +8,7 @@ import com.ravingarinc.eldenrhym.character.CharacterManager;
 import com.ravingarinc.eldenrhym.combat.CombatListener;
 import com.ravingarinc.eldenrhym.combat.CombatManager;
 import com.ravingarinc.eldenrhym.command.ReloadCommand;
+import com.ravingarinc.eldenrhym.compatibility.RPGHandler;
 import com.ravingarinc.eldenrhym.file.ConfigManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.Nullable;
@@ -24,6 +25,8 @@ public final class EldenRhym extends JavaPlugin {
     private static Logger logger;
 
     private static EldenRhym instance;
+
+    private RPGHandler handler;
 
     private Map<Class<? extends Module>, Module> modules;
 
@@ -83,6 +86,8 @@ public final class EldenRhym extends JavaPlugin {
         AsyncHandler.load(this);
         loadModules();
         validateLoad();
+
+        handler = RPGHandler.getHandler(this);
 
         getCommand("rhymreload").setExecutor(new ReloadCommand());
     }
@@ -168,5 +173,9 @@ public final class EldenRhym extends JavaPlugin {
         this.getServer().getScheduler().cancelTasks(this);
 
         log(Level.INFO, getName() + " is disabled.");
+    }
+
+    public RPGHandler getRPGHandler() {
+        return handler;
     }
 }

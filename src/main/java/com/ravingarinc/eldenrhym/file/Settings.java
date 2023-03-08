@@ -12,6 +12,8 @@ public class Settings {
     public long dodgeWarmup = 100;
     public long dodgeDuration = 300;
     public float dodgeStrength = 0.5F;
+
+    public int dodgeStaminaCost = 50;
     public double dodgeMitigation = 0.5;
     public int dodgeParticleCount = 5;
 
@@ -19,6 +21,10 @@ public class Settings {
 
     public boolean blockEnabled = true;
     public long blockDuration = 600;
+
+    public int successBlockCost = 50;
+
+    public int failBlockCost = 100;
 
     public double blockSuccessMitigation = 1.0;
 
