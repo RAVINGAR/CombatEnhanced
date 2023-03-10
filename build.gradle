@@ -14,24 +14,6 @@ repositories {
     gradlePluginPortal()
     mavenCentral()
 
-
-    maven {
-        name = 'spigotmc-repo'
-        url = 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/'
-    }
-    maven {
-        name = 'sonatype'
-        url = 'https://oss.sonatype.org/content/groups/public/'
-    }
-
-    maven {
-        name 'phoenix-repo'
-        url 'https://nexus.phoenixdevt.fr/repository/maven-public/'
-        content {
-            includeGroup 'io.lumine'
-            includeGroup 'net.Indyuce'
-        }
-    }
     maven {
         name 'dmulloy2-repo'
         url 'https://repo.dmulloy2.net/repository/public/'
@@ -47,6 +29,20 @@ repositories {
             includeGroup 'com.herocraftonline.heroes'
         }
     }
+
+    maven {
+        name = 'spigotmc-repo'
+        url = 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/'
+    }
+    maven {
+        name = 'sonatype'
+        url = 'https://oss.sonatype.org/content/groups/public/'
+    }
+
+    maven {
+        name 'phoenix-repo'
+        url 'https://nexus.phoenixdevt.fr/repository/maven-public/'
+    }
 }
 
 dependencies {
@@ -55,7 +51,7 @@ dependencies {
     compileOnly 'org.spigotmc:spigot-api:1.18.2-R0.1-SNAPSHOT'
     compileOnly 'com.herocraftonline.heroes:Heroes:1.9.30-RELEASE'
     compileOnly 'net.Indyuce:MMOItems-API:6.9.2-SNAPSHOT'
-    //compileOnly 'io.lumine:MythicLib-dist:1.4.2-SNAPSHOT'
+    compileOnly 'io.lumine:MythicLib-dist:1.5.1-SNAPSHOT'
     compileOnly 'com.comphenix.protocol:ProtocolLib:4.7.0'
     testImplementation 'org.jetbrains:annotations:23.1.0'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0'
@@ -165,10 +161,10 @@ bukkit {
     // website = 'https://example.com'
     // author = 'Notch'
 
-    name = 'EldenRhym'
+    name = 'CombatEnhanced'
     version = project.version
-    description = 'Feature plugin for EldenRhym Server'
-    main = 'com.ravingarinc.eldenrhym.EldenRhym'
+    description = 'Feature plugin for enhanced combat!'
+    main = 'com.ravingarinc.combat.CombatEnhanced'
 
     // API version (should be set for 1.13+)
     apiVersion = '1.18'
@@ -179,10 +175,10 @@ bukkit {
     defaultPermission = 'FALSE' // 'TRUE', 'FALSE', 'OP' or 'NOT_OP'
 
     commands {
-        rhymreload {
-            description = 'Reloads the EldenRhym plugin'
-            usage = '/rhymreload'
-            permission = 'eldenrhym.reload'
+        combatreload {
+            description = 'Reloads the CombatEnhanced plugin'
+            usage = '/combatreload'
+            permission = 'combat.reload'
         }
     }
 }
