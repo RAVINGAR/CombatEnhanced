@@ -1,8 +1,10 @@
 package com.ravingarinc.combat.combat.runner;
 
+import com.ravingarinc.combat.CombatEnhanced;
 import com.ravingarinc.combat.api.AsyncHandler;
 import com.ravingarinc.combat.api.Vector3;
 import com.ravingarinc.combat.combat.event.PlayerBlockEvent;
+import com.ravingarinc.combat.compatibility.RPGHandler;
 import com.ravingarinc.combat.file.Settings;
 import org.bukkit.ChatColor;
 import org.bukkit.EntityEffect;
@@ -16,27 +18,35 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 
 public class BlockRunner extends IdentifierRunner<PlayerBlockEvent, EntityDamageByEntityEvent> {
+    private final RPGHandler handler;
 
-    public BlockRunner(final Settings settings) {
+    public BlockRunner(final Settings settings, final CombatEnhanced plugin) {
         super(settings);
+        handler = plugin.getRPGHandler();
     }
 
     @Override
     public boolean handleWithEvent(final PlayerBlockEvent blockEvent, final EntityDamageByEntityEvent event) {
         final Player defender = (Player) event.getEntity();
         if (defender.isBlocking() && settings.blockDamageCauses.contains(event.getCause())) {
-            defender.sendMessage(ChatColor.RED + "You blocked the attack!");
-            //attacker.sendMessage(ChatColor.RED + defender.getName() + " blocked the attack!");
-            defender.playSound(defender, Sound.ENTITY_ARROW_HIT_PLAYER, 1.0F, 1.0F);
-            defender.getLocation().getWorld().playSound(defender, Sound.ITEM_SHIELD_BLOCK, 1.0F, 1.0F);
-            if (event.getDamager() instanceof LivingEntity livingAttacker) {
-                throwEntity(defender, livingAttacker, settings.blockThrowStrength);
-                livingAttacker.playEffect(EntityEffect.HURT);
-            } else if (event.getDamager() instanceof AbstractArrow arrow) {
-                defender.launchProjectile(arrow.getClass(), arrow.getVelocity().multiply(-0.5)).setDamage(arrow.getDamage() * 0.5);
-                arrow.remove();
+            if (handler.tryRemoveStamina(defender, settings.successBlockCost)) {
+                defender.sendMessage(ChatColor.RED + "You blocked the attack!");
+                defender.playSound(defender, Sound.ENTITY_ARROW_HIT_PLAYER, 1.0F, 1.0F);
+                defender.getWorld().playSound(defender, Sound.ITEM_SHIELD_BLOCK, 1.0F, 1.0F);
+
+                if (event.getDamager() instanceof LivingEntity livingAttacker) {
+                    throwEntity(defender, livingAttacker, settings.blockThrowStrength);
+                    livingAttacker.playEffect(EntityEffect.HURT);
+                } else if (event.getDamager() instanceof AbstractArrow arrow) {
+                    defender.launchProjectile(arrow.getClass(), arrow.getVelocity().multiply(-0.5)).setDamage(arrow.getDamage() * 0.5);
+                    arrow.remove();
+                }
+                handlePostEvent(event, defender, settings.blockSuccessMitigation);
+            } else {
+                defender.setCooldown(Material.SHIELD, (int) handler.getShieldCooldown(defender));
+                defender.playSound(defender, Sound.ITEM_SHIELD_BREAK, 1.0F, 1.0F);
+                throwEntity(event.getDamager(), defender, settings.blockThrowStrength);
             }
-            handlePostEvent(event, defender, settings.blockSuccessMitigation);
             return true;
         }
         return false;
@@ -46,10 +56,14 @@ public class BlockRunner extends IdentifierRunner<PlayerBlockEvent, EntityDamage
     public boolean handleWithoutEvent(final EntityDamageByEntityEvent event) {
         if (event.getEntity() instanceof Player defender) {
             if (defender.isBlocking() && settings.blockDamageCauses.contains(event.getCause())) {
-                defender.playSound(defender, Sound.ITEM_SHIELD_BREAK, 1.0F, 1.0F);
-                defender.setCooldown(Material.SHIELD, (int) (settings.blockCooldown / 1000 * 20));
+                if (handler.tryRemoveStamina(defender, settings.failBlockCost)) {
+                    defender.getWorld().playSound(defender, Sound.ITEM_SHIELD_BLOCK, 1.0F, 1.0F);
+                    handlePostEvent(event, defender, settings.blockFailMitigation);
+                } else {
+                    defender.playSound(defender, Sound.ITEM_SHIELD_BREAK, 1.0F, 1.0F);
+                    defender.setCooldown(Material.SHIELD, (int) handler.getShieldCooldown(defender));
+                }
                 throwEntity(event.getDamager(), defender, settings.blockThrowStrength);
-                handlePostEvent(event, defender, settings.blockFailMitigation);
                 return true;
             }
         }

@@ -9,9 +9,9 @@ public interface RPGHandler {
     @NotNull
     static RPGHandler getHandler(final CombatEnhanced plugin) {
         if (plugin.getServer().getPluginManager().getPlugin("KalentireRPG") != null) {
-            return new KalentireHandler();
+            return new KalentireHandler(plugin);
         } else if (plugin.getServer().getPluginManager().getPlugin("MMOItems") != null) {
-            return new MMOHandler();
+            return new MMOHandler(plugin);
         }
         return new DefaultHandler();
     }
@@ -42,5 +42,10 @@ public interface RPGHandler {
 
     default float getDodgeStrength(final Player player) {
         return 1.0F;
+    }
+
+    int getDodgeCost(final Player player);
+    default long getShieldCooldown(final Player player) {
+        return 60L;
     }
 }

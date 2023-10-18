@@ -3,7 +3,6 @@ package com.ravingarinc.combat.character;
 import com.ravingarinc.combat.CombatEnhanced;
 import com.ravingarinc.combat.api.AsyncHandler;
 import com.ravingarinc.combat.api.AsynchronousException;
-import com.ravingarinc.combat.compatibility.RPGHandler;
 import org.bukkit.FluidCollisionMode;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
@@ -19,11 +18,9 @@ import java.util.function.Predicate;
 
 @ThreadSafe
 public class CharacterPlayer extends CharacterEntity<Player> {
-    private final RPGHandler handler;
 
     protected CharacterPlayer(final CombatEnhanced plugin, final Player entity) {
         super(plugin, entity);
-        this.handler = plugin.getRPGHandler();
     }
 
     @Override
@@ -54,13 +51,5 @@ public class CharacterPlayer extends CharacterEntity<Player> {
     @Async.Execute
     public boolean isBlocking() throws AsynchronousException {
         return AsyncHandler.executeBlockingSyncComputation(entity::isBlocking);
-    }
-
-    public boolean tryRemoveStamina(final int amount) {
-        return handler.tryRemoveStamina(entity, amount);
-    }
-
-    public boolean tryRemoveMana(final int amount) {
-        return handler.tryRemoveMana(entity, amount);
     }
 }

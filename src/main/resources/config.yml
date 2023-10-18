@@ -20,9 +20,9 @@ combat-features:
     #How strong the dodge is.
     strength: 0.5
     #How much is damage mitigated by - change this to be based on an MMOItems stat later
-    mitigation: 0.6
+    mitigation: 0.75
     # Stamina cost of a dodge
-    stamina-cost: 75
+    stamina-cost: 5
     # Which damage causes apply to a dodge event. See list here https://hub.spigotmc.org/javadocs/spigot/org/bukkit/event/entity/EntityDamageEvent.DamageCause.html
     applicable-damage-causes:
       - ENTITY_ATTACK

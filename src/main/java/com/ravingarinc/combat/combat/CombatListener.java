@@ -2,6 +2,7 @@ package com.ravingarinc.combat.combat;
 
 import com.ravingarinc.combat.CombatEnhanced;
 import com.ravingarinc.combat.api.ModuleListener;
+import com.ravingarinc.combat.compatibility.RPGHandler;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -16,6 +17,7 @@ import java.util.UUID;
 
 public class CombatListener extends ModuleListener {
     private CombatManager manager;
+    private RPGHandler handler;
 
     public CombatListener(final CombatEnhanced plugin) {
         super(CombatListener.class, plugin, CombatManager.class);
@@ -24,6 +26,7 @@ public class CombatListener extends ModuleListener {
     @Override
     protected void load() {
         manager = plugin.getModule(CombatManager.class);
+        handler = plugin.getRPGHandler();
         super.load();
     }
 
@@ -39,7 +42,9 @@ public class CombatListener extends ModuleListener {
         if (manager.justDodged(uuid) || manager.isBlocking(uuid) || manager.isDodging(uuid)) {
             return;
         }
-        manager.queueDodgeEvent(player);
+        if (handler.tryRemoveStamina(player, handler.getDodgeCost(player))) {
+            manager.queueDodgeEvent(player);
+        }
     }
 
     @EventHandler

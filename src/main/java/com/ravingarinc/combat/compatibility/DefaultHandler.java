@@ -13,4 +13,9 @@ public class DefaultHandler implements RPGHandler {
     public boolean tryRemoveMana(final Player player, final int amount) {
         return true;
     }
+
+    @Override
+    public int getDodgeCost(Player player) {
+        return 0;
+    }
 }

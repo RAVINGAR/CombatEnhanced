@@ -4,6 +4,8 @@ import com.ravingarinc.combat.api.AsyncHandler;
 import com.ravingarinc.combat.api.AsynchronousException;
 import com.ravingarinc.combat.api.Vector3;
 import com.ravingarinc.combat.character.CharacterEntity;
+import com.ravingarinc.combat.character.CharacterPlayer;
+import com.ravingarinc.combat.compatibility.RPGHandler;
 import com.ravingarinc.combat.file.Settings;
 import org.bukkit.Location;
 import org.bukkit.Particle;
@@ -35,15 +37,18 @@ public class DodgeEvent extends CombatEvent<CharacterEntity<?>, EntityDamageByEn
     protected Vector3 initialVelocity;
     protected Vector3 location;
 
+    protected RPGHandler handler;
+
     public DodgeEvent(@NotNull final CharacterEntity<?> entity,
                       final Vector3 location,
                       final long start,
-                      final Settings settings, final BlockData data) {
+                      final Settings settings, final RPGHandler handler, final BlockData data) {
         super(entity, start, settings.dodgeWarmup + settings.dodgeDuration);
         this.initialVelocity = new Vector3();
         this.settings = settings;
         this.warmup = start + settings.dodgeWarmup;
         this.location = location;
+        this.handler = handler;
         this.particleCount = settings.dodgeParticleCount;
         this.dodging = new AtomicBoolean(false);
         this.defaultData = data;
@@ -95,7 +100,7 @@ public class DodgeEvent extends CombatEvent<CharacterEntity<?>, EntityDamageByEn
         final Vector3 postLoc = entity.getLocation();
         final double d0 = postLoc.getX() - location.getX();
         final double d1 = postLoc.getZ() - location.getZ();
-        final float strength = settings.dodgeStrength;
+        final float strength = settings.dodgeStrength * (entity instanceof CharacterPlayer player ? handler.getDodgeStrength(player.getEntity()) : 1.0F);
 
         if (d0 == 0 && d1 == 0) {
             // case -> Player is not moving. Make them backpedal
