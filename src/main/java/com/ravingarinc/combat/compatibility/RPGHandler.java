@@ -1,6 +1,7 @@
 package com.ravingarinc.combat.compatibility;
 
 import com.ravingarinc.combat.CombatEnhanced;
+import com.ravingarinc.combat.compatibility.kalentire.KalentireHandler;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 

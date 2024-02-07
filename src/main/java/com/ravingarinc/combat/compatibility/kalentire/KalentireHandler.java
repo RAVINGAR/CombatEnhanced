@@ -1,21 +1,16 @@
-package com.ravingarinc.combat.compatibility;
+package com.ravingarinc.combat.compatibility.kalentire;
 
 import com.google.common.util.concurrent.AtomicDouble;
 import com.herocraftonline.heroes.Heroes;
 import com.herocraftonline.heroes.characters.CharacterManager;
 import com.herocraftonline.heroes.characters.Hero;
-import com.herocraftonline.heroes.characters.equipment.EquipmentChangedEvent;
 import com.herocraftonline.heroes.characters.equipment.EquipmentType;
 import com.ravingarinc.combat.CombatEnhanced;
 import com.ravingarinc.combat.combat.CombatManager;
+import com.ravingarinc.combat.compatibility.RPGHandler;
 import com.ravingarinc.combat.file.Settings;
 import io.lumine.mythic.lib.api.item.NBTItem;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
@@ -24,9 +19,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 
 public class KalentireHandler implements RPGHandler {
     private final CombatEnhanced plugin;
@@ -39,10 +32,18 @@ public class KalentireHandler implements RPGHandler {
 
     private Settings settings = null;
 
+    // This should mirror Kalentire API
+    public static final String DODGE_TICKS = "DODGE_TICKS";
+
+    public static final String POISE = "POISE";
+
+    public static final String IMPACT = "IMPACT";
+
+    public static final String STAMINA_DRAIN = "HEROES_STAMINA_DRAIN";
+
     public KalentireHandler(final CombatEnhanced plugin) {
         stats = new HashMap<>();
         this.plugin = plugin;
-
 
         dodgeValues = new HashMap<>();
         dodgeValues.put("LIGHT_ARMOUR", 0.9F);
@@ -54,7 +55,11 @@ public class KalentireHandler implements RPGHandler {
         dodgeCosts.put("MEDIUM_ARMOUR", 15);
         dodgeCosts.put("HEAVY_ARMOUR", 20);
 
-        plugin.getServer().getPluginManager().registerEvents(new KalentireListener(), plugin);
+        plugin.getServer().getPluginManager().registerEvents(new KalentireListener(this), plugin);
+    }
+
+    public void removePlayer(Player player) {
+        this.stats.remove(player);
     }
 
     public CharacterManager getManager() {
@@ -144,7 +149,7 @@ public class KalentireHandler implements RPGHandler {
         stats.put(player, new EquipmentStats(player));
     }
 
-    private class EquipmentStats {
+    public class EquipmentStats {
         private final Map<EquipmentType, AtomicDouble> dodgeFactors;
         private final Map<EquipmentType, AtomicInteger> dodgeCosts;
 
@@ -189,43 +194,6 @@ public class KalentireHandler implements RPGHandler {
             }
             dodge /= dodgeCosts.size();
             return (int) dodge;
-        }
-    }
-
-    private class KalentireListener implements Listener {
-        private final Map<EquipmentType, Consumer<EquipmentChangedEvent>> handlers;
-
-        public KalentireListener() {
-            handlers = new HashMap<>();
-
-            final Consumer<EquipmentChangedEvent> armourConsumer = (event) -> {
-                EquipmentStats stats = getStats(event.getPlayer());
-                stats.setDodgeFactor(event.getType(), parseDodgeStrength(event.getNewArmorPiece()));
-                stats.setDodgeCost(event.getType(), parseDodgeCost(event.getNewArmorPiece()));
-            };
-
-            handlers.put(EquipmentType.HELMET, armourConsumer);
-            handlers.put(EquipmentType.CHESTPLATE, armourConsumer);
-            handlers.put(EquipmentType.LEGGINGS, armourConsumer);
-            handlers.put(EquipmentType.BOOTS, armourConsumer);
-
-            // Todo shields for block stats!
-        }
-
-        @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-        public void onEquipmentChange(final EquipmentChangedEvent event) {
-            Optional.ofNullable(handlers.get(event.getType())).ifPresent(handler -> handler.accept(event));
-        }
-
-
-        @EventHandler
-        public void onPlayerJoin(final PlayerJoinEvent event) {
-            loadStats(event.getPlayer());
-        }
-
-        @EventHandler(priority = EventPriority.HIGHEST)
-        public void onPlayerQuit(final PlayerQuitEvent event) {
-            stats.remove(event.getPlayer());
         }
     }
 

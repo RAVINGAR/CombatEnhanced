@@ -2,7 +2,7 @@ combat-features:
   # All time settings are measured in milliseconds
   debug: true
   # The time before a player can attempt to use an ability again. (Prevents spamming)
-  global-cooldown: 50
+  global-cooldown: 100
   dodge:
     # A player can dodge via pressing the F keybind (player swap hands). If the player is not in the air the player
     # will be 'thrown' in the direction they are moving. For the duration of the dodge they mitigate any targetted damage taken.
