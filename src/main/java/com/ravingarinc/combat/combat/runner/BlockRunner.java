@@ -70,7 +70,7 @@ public class BlockRunner extends IdentifierRunner<PlayerBlockEvent, EntityDamage
         return false;
     }
 
-    private void handlePostEvent(final EntityDamageByEntityEvent event, final LivingEntity defender, final double mitigation) {
+    protected void handlePostEvent(final EntityDamageByEntityEvent event, final LivingEntity defender, final double mitigation) {
         final double damage = event.getDamage() * (1.0 - mitigation);
         if (damage > 0) {
             event.setDamage(damage);

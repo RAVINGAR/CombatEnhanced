@@ -1,8 +1,17 @@
 package com.ravingarinc.combat.compatibility;
 
+import com.ravingarinc.combat.CombatEnhanced;
+import com.ravingarinc.combat.combat.CombatManager;
+import com.ravingarinc.combat.file.Settings;
 import org.bukkit.entity.Player;
 
 public class DefaultHandler implements RPGHandler {
+    private final Settings settings;
+
+    public DefaultHandler(CombatEnhanced plugin) {
+        settings = plugin.getModule(CombatManager.class).getSettings();
+    }
+
 
     @Override
     public boolean tryRemoveStamina(final Player player, final int amount) {
@@ -14,8 +23,9 @@ public class DefaultHandler implements RPGHandler {
         return true;
     }
 
+
     @Override
-    public int getDodgeCost(Player player) {
-        return 0;
+    public Settings getSettings() {
+        return settings;
     }
 }

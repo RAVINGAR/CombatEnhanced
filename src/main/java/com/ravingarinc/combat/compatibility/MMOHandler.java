@@ -39,12 +39,7 @@ public class MMOHandler implements RPGHandler {
     }
 
     @Override
-    public int getDodgeCost(Player player) {
-        return settings.dodgeStaminaCost;
-    }
-
-    @Override
-    public long getShieldCooldown(final Player player) {
-        return settings.blockCooldown * 50;
+    public Settings getSettings() {
+        return settings;
     }
 }

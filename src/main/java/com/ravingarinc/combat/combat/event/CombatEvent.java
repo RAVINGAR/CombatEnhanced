@@ -2,7 +2,6 @@ package com.ravingarinc.combat.combat.event;
 
 import com.ravingarinc.combat.api.AsynchronousException;
 import com.ravingarinc.combat.character.CharacterEntity;
-import org.bukkit.event.Event;
 import org.jetbrains.annotations.Async;
 import org.jetbrains.annotations.Blocking;
 
@@ -13,9 +12,8 @@ import java.util.concurrent.Callable;
  * if true means that this event is interrupted and should be removed from the runner.
  *
  * @param <T> The type of entity that is applicable to this event
- * @param <E> The type of Bukkit event this event reacts to
  */
-public abstract class CombatEvent<T extends CharacterEntity<?>, E extends Event> implements Callable<Boolean> {
+public abstract class CombatEvent<T extends CharacterEntity<?>> implements Callable<Boolean> {
     protected final T entity;
     private final long expireTime;
     private final Object lock = new Object();
@@ -91,7 +89,7 @@ public abstract class CombatEvent<T extends CharacterEntity<?>, E extends Event>
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        final CombatEvent<?, ?> that = (CombatEvent<?, ?>) o;
+        final CombatEvent<?> that = (CombatEvent<?>) o;
         return entity.equals(that.entity);
     }
 

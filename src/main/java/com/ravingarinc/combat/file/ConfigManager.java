@@ -48,7 +48,7 @@ public class ConfigManager extends Module {
             wrap(() -> child.getStringList("applicable-damage-causes")).ifPresent(list ->
                     list.forEach(name -> convertDamageCause(name).ifPresent(cause -> settings.dodgeDamageCauses.add(cause))));
         })) {
-            CombatEnhanced.log(Level.WARNING, "config.yml is missing parry section");
+            CombatEnhanced.log(Level.WARNING, "config.yml is missing `parry` section");
         }
 
         if (consumeSection(section, "block", (child) -> {
@@ -63,8 +63,21 @@ public class ConfigManager extends Module {
             wrap(() -> child.getStringList("applicable-damage-causes")).ifPresent(list ->
                     list.forEach(name -> convertDamageCause(name).ifPresent(cause -> settings.blockDamageCauses.add(cause))));
         })) {
-            CombatEnhanced.log(Level.WARNING, "config.yml is missing block section");
+            CombatEnhanced.log(Level.WARNING, "config.yml is missing `block` section");
         }
+
+        if(consumeSection(section, "poise", (child) -> {
+            wrap(() -> child.getDouble("base-threshold")).ifPresent(b -> settings.poiseBaseThreshold = b.floatValue());
+            wrap(() -> child.getLong("window")).ifPresent(b -> settings.poiseWindow = b);
+            wrap(() -> child.getDouble("stun-threshold")).ifPresent(b -> settings.stunThreshold = b.floatValue());
+            wrap(() -> child.getLong("stun-duration-per-threshold")).ifPresent(b -> settings.stunDurationPerThreshold = b);
+            wrap(() -> child.getLong("max-stun-duration")).ifPresent(b -> settings.maxStunDuration = b);
+            wrap(() -> child.getLong("stun-cooldown")).ifPresent(b -> settings.stunCooldown = b);
+            wrap(() -> child.getDouble("vulnerability-per-poise")).ifPresent(b -> settings.vulnerabilityPerPoise = b);
+            wrap(() -> child.getDouble("bonus-vulnerability")).ifPresent(b -> settings.bonusVulnerability = b);
+        })) {
+            CombatEnhanced.log(Level.WARNING, "config.yml is missing `poise` section");
+        };
     }
 
     private Optional<DamageCause> convertDamageCause(final String name) {

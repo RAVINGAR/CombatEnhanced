@@ -13,7 +13,6 @@ import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.LivingEntity;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.jetbrains.annotations.Async;
 import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.NotNull;
@@ -24,7 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * Represents a dodge event independent of a target entity
  */
-public class DodgeEvent extends CombatEvent<CharacterEntity<?>, EntityDamageByEntityEvent> {
+public class DodgeEvent extends CombatEvent<CharacterEntity<?>> {
 
     protected final Settings settings;
 

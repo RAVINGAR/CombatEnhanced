@@ -14,9 +14,9 @@ import java.util.List;
 /**
  * Run asynchronously
  */
-public abstract class EventRunner<T extends CombatEvent<?, E>, E extends Event> extends BukkitRunnable {
-    private final Collection<T> events;
-    private final List<T> toRemove;
+public abstract class EventRunner<T extends CombatEvent<?>, E extends Event> extends BukkitRunnable {
+    protected final Collection<T> events;
+    protected final List<T> toRemove;
 
     public EventRunner(final Collection<T> events) {
         this.events = events;
@@ -34,15 +34,6 @@ public abstract class EventRunner<T extends CombatEvent<?, E>, E extends Event> 
         events.remove(event);
     }
 
-    /*
-    TODO
-      If this doesnt work I have a solution,
-      basically a Synchronous Runnable on a timer can receive intended requests. These requests are executed async
-      These requests could be add/remove and the run(). When performing get(), must make sure that add()
-      and remove() aren't being executed. The solution is almost to create a last map sort of idea
-      (is this not what concurrent hashmap is?). So if add() and remove() are being using, then get() from thr last copy.
-
-     */
     @Override
     @Blocking
     @Async.Execute

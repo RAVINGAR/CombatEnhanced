@@ -2,6 +2,7 @@ package com.ravingarinc.combat.compatibility;
 
 import com.ravingarinc.combat.CombatEnhanced;
 import com.ravingarinc.combat.compatibility.kalentire.KalentireHandler;
+import com.ravingarinc.combat.file.Settings;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
@@ -14,15 +15,12 @@ public interface RPGHandler {
         } else if (plugin.getServer().getPluginManager().getPlugin("MMOItems") != null) {
             return new MMOHandler(plugin);
         }
-        return new DefaultHandler();
+        return new DefaultHandler(plugin);
     }
 
-    /**
-     * Reload this handler
-     */
-    default void reload() {
-    }
+    default void load() {}
 
+    default void cancel() {}
     /**
      * Attempts to remove stamina, only if the given player has enough.
      *
@@ -42,11 +40,20 @@ public interface RPGHandler {
     boolean tryRemoveMana(Player player, int amount);
 
     default float getDodgeStrength(final Player player) {
-        return 1.0F;
+        return getSettings().dodgeStrength;
     }
 
-    int getDodgeCost(final Player player);
-    default long getShieldCooldown(final Player player) {
-        return 60L;
+    default int getDodgeCost(final Player player) {
+        return getSettings().dodgeStaminaCost;
     }
+    default long getShieldCooldown(final Player player) {
+        return getSettings().blockCooldown;
+    }
+
+    /**
+     * Get the duration of the dodge in milliseconds.n
+     */
+    default long getDodgeDuration(final Player player) { return getSettings().dodgeDuration; }
+
+    Settings getSettings();
 }

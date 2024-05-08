@@ -1,36 +1,38 @@
 package com.ravingarinc.combat.compatibility.kalentire;
 
-import com.google.common.util.concurrent.AtomicDouble;
 import com.herocraftonline.heroes.Heroes;
+import com.herocraftonline.heroes.api.events.HeroesDamageEvent;
 import com.herocraftonline.heroes.characters.CharacterManager;
 import com.herocraftonline.heroes.characters.Hero;
-import com.herocraftonline.heroes.characters.equipment.EquipmentType;
+import com.ravingarinc.api.I;
+import com.ravingarinc.api.Sync;
 import com.ravingarinc.combat.CombatEnhanced;
+import com.ravingarinc.combat.character.CharacterEntity;
+import com.ravingarinc.combat.character.CharacterMonster;
+import com.ravingarinc.combat.character.CharacterPlayer;
 import com.ravingarinc.combat.combat.CombatManager;
+import com.ravingarinc.combat.combat.runner.PoiseRunner;
 import com.ravingarinc.combat.compatibility.RPGHandler;
+import com.ravingarinc.combat.compatibility.kalentire.effect.PoiseBreakEffect;
 import com.ravingarinc.combat.file.Settings;
-import io.lumine.mythic.lib.api.item.NBTItem;
+import io.lumine.mythic.lib.api.player.MMOPlayerData;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.EquipmentSlot;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.PlayerInventory;
-import org.jetbrains.annotations.NotNull;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.HandlerList;
+import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
 
-public class KalentireHandler implements RPGHandler {
+public class KalentireHandler implements RPGHandler, Listener {
     private final CombatEnhanced plugin;
     private CharacterManager manager = null;
 
-    private final Map<Player, EquipmentStats> stats;
+    private final Settings settings;
 
-    private final Map<String, Float> dodgeValues;
-    private final Map<String, Integer> dodgeCosts;
-
-    private Settings settings = null;
+    private PoiseRunner poiseRunner;
 
     // This should mirror Kalentire API
     public static final String DODGE_TICKS = "DODGE_TICKS";
@@ -41,25 +43,32 @@ public class KalentireHandler implements RPGHandler {
 
     public static final String STAMINA_DRAIN = "HEROES_STAMINA_DRAIN";
 
+    public static final String BLOCK_COOLDOWN = "BLOCK_COOLDOWN";
+
+
+
+
     public KalentireHandler(final CombatEnhanced plugin) {
-        stats = new HashMap<>();
         this.plugin = plugin;
-
-        dodgeValues = new HashMap<>();
-        dodgeValues.put("LIGHT_ARMOUR", 0.9F);
-        dodgeValues.put("MEDIUM_ARMOUR", 0.75F);
-        dodgeValues.put("HEAVY_ARMOUR", 0.6F);
-
-        dodgeCosts = new HashMap<>();
-        dodgeCosts.put("LIGHT_ARMOUR", 10);
-        dodgeCosts.put("MEDIUM_ARMOUR", 15);
-        dodgeCosts.put("HEAVY_ARMOUR", 20);
-
-        plugin.getServer().getPluginManager().registerEvents(new KalentireListener(this), plugin);
+        this.settings = plugin.getModule(CombatManager.class).getSettings();
+        // TODO Dodge Values should be based on player movement
     }
 
-    public void removePlayer(Player player) {
-        this.stats.remove(player);
+    @Override
+    public void load() {
+        plugin.getServer().getPluginManager().registerEvents(this, plugin);
+        PoiseBreakEffect.register(plugin);
+
+        poiseRunner = new PoiseRunner(plugin, this);
+        poiseRunner.runTaskTimerAsynchronously(plugin, 0L, 5L);
+    }
+
+    @Override
+    public void cancel() {
+        HandlerList.unregisterAll(this);
+        PoiseBreakEffect.unregister();
+
+        poiseRunner.cancel();
     }
 
     public CharacterManager getManager() {
@@ -67,36 +76,6 @@ public class KalentireHandler implements RPGHandler {
             manager = Heroes.getInstance().getCharacterManager();
         }
         return manager;
-    }
-
-    public Settings getSettings() {
-        if(settings == null) {
-            settings = plugin.getModule(CombatManager.class).getSettings();
-        }
-        return settings;
-    }
-
-    public float parseDodgeStrength(final ItemStack stack) {
-        if (stack == null) {
-            return 1.0F;
-        }
-        final NBTItem item = NBTItem.get(stack);
-        final Float val = dodgeValues.get(item.getString("MMOITEMS_ITEM_ID"));
-        return val == null ? 1.0F : val;
-    }
-
-    public int parseDodgeCost(final ItemStack stack) {
-        if (stack == null) {
-            return getSettings().dodgeStaminaCost;
-        }
-        final NBTItem item = NBTItem.get(stack);
-        final Integer val = dodgeCosts.get(item.getString("MMOITEMS_ITEM_ID"));
-        return val == null ? getSettings().dodgeStaminaCost : val;
-    }
-
-    @Override
-    public void reload() {
-        stats.clear();
     }
 
     @Override
@@ -123,78 +102,67 @@ public class KalentireHandler implements RPGHandler {
 
     @Override
     public float getDodgeStrength(final Player player) {
-        return getStats(player).getDodgeStrength();
+        final var speed = (float)player.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).getValue();
+        I.log(Level.WARNING, "Debug -> Player's Speed is " + speed);
+        return Math.min(1.0F, (0.9F - (0.13F - speed))); // TODO Figure out this formula
     }
 
     @Override
     public int getDodgeCost(Player player) {
-        return getStats(player).getDodgeCost();
+        final var data = MMOPlayerData.get(player);
+        return (int) Math.floor(getSettings().dodgeStaminaCost * (1.0 + data.getStatMap().getStat(STAMINA_DRAIN)));
     }
 
     @Override
     public long getShieldCooldown(final Player player) {
-        // todo
-        return 500 / 50;
+        final var data = MMOPlayerData.get(player);
+        return (int) data.getStatMap().getStat(BLOCK_COOLDOWN) / 50L;
     }
 
-    @NotNull
-    protected EquipmentStats getStats(final Player player) {
-        return Objects.requireNonNull(stats.get(player), "Player stats should have been initialised already!");
+    @Override
+    public Settings getSettings() {
+        return settings;
     }
 
-    protected void loadStats(final Player player) {
-        if (stats.containsKey(player)) {
+    @Sync.AsyncOnly
+    public double getPoise(CharacterEntity<?> character) {
+        if(character instanceof CharacterPlayer player) {
+            return settings.poiseBaseThreshold + getPoiseForPlayer(player);
+        } else if(character instanceof CharacterMonster monster) {
+            return settings.poiseBaseThreshold + getPoiseForMonster(monster);
+        }
+        return settings.poiseBaseThreshold;
+    }
+
+    private double getPoiseForPlayer(CharacterPlayer player) {
+        final var data = MMOPlayerData.getOrNull(player.getUniqueId());
+        if(data == null) return 0.0;
+        return data.getStatMap().getStat(POISE);
+    }
+
+    private double getPoiseForMonster(CharacterMonster monster) {
+        // TODO these nuts
+        //   check if mythic mob and get poise from them
+        return 0.0;
+    }
+
+
+    @EventHandler
+    public void onHeroesDamageEvent(final HeroesDamageEvent event) {
+        if(event.getDamage() == 0) {
             return;
         }
-        stats.put(player, new EquipmentStats(player));
+        poiseRunner.handle(event);
     }
 
-    public class EquipmentStats {
-        private final Map<EquipmentType, AtomicDouble> dodgeFactors;
-        private final Map<EquipmentType, AtomicInteger> dodgeCosts;
+    @EventHandler
+    public void onDeathEvent(final EntityDeathEvent event) {
+        poiseRunner.removeAll(event.getEntity().getUniqueId());
+    }
 
-        public EquipmentStats(final Player player) {
-            dodgeFactors = new HashMap<>();
-            dodgeCosts = new HashMap<>();
-
-            final PlayerInventory inventory = player.getInventory();
-
-            dodgeFactors.put(EquipmentType.HELMET, new AtomicDouble(parseDodgeStrength(inventory.getItem(EquipmentSlot.HEAD))));
-            dodgeFactors.put(EquipmentType.CHESTPLATE, new AtomicDouble(parseDodgeStrength(inventory.getItem(EquipmentSlot.CHEST))));
-            dodgeFactors.put(EquipmentType.LEGGINGS, new AtomicDouble(parseDodgeStrength(inventory.getItem(EquipmentSlot.LEGS))));
-            dodgeFactors.put(EquipmentType.BOOTS, new AtomicDouble(parseDodgeStrength(inventory.getItem(EquipmentSlot.FEET))));
-
-            dodgeCosts.put(EquipmentType.HELMET, new AtomicInteger(parseDodgeCost(inventory.getItem(EquipmentSlot.HEAD))));
-            dodgeCosts.put(EquipmentType.CHESTPLATE, new AtomicInteger(parseDodgeCost(inventory.getItem(EquipmentSlot.CHEST))));
-            dodgeCosts.put(EquipmentType.LEGGINGS, new AtomicInteger(parseDodgeCost(inventory.getItem(EquipmentSlot.LEGS))));
-            dodgeCosts.put(EquipmentType.BOOTS, new AtomicInteger(parseDodgeCost(inventory.getItem(EquipmentSlot.FEET))));
-        }
-
-        public void setDodgeFactor(final EquipmentType type, final float factor) {
-            dodgeFactors.get(type).set(factor);
-        }
-
-        public void setDodgeCost(final EquipmentType type, final int cost) {
-            dodgeCosts.get(type).setRelease(cost);
-        }
-
-        public float getDodgeStrength() {
-            double dodge = 0.0;
-            for (final AtomicDouble factor : dodgeFactors.values()) {
-                dodge += factor.get();
-            }
-            dodge /= dodgeFactors.size();
-            return (float) dodge;
-        }
-
-        public int getDodgeCost() {
-            double dodge = 0.0;
-            for (final AtomicInteger factor : dodgeCosts.values()) {
-                dodge += factor.get();
-            }
-            dodge /= dodgeCosts.size();
-            return (int) dodge;
-        }
+    @EventHandler
+    public void onQuitEvent(final PlayerQuitEvent event) {
+        poiseRunner.removeAll(event.getPlayer().getUniqueId());
     }
 
 }

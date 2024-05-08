@@ -10,6 +10,7 @@ import org.jetbrains.annotations.Blocking;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Represents a thread safe entity that wraps bukkit api such that it can be called in async computations.
@@ -18,16 +19,22 @@ import java.util.Optional;
 @ThreadSafe
 public abstract class CharacterEntity<T extends LivingEntity> {
     protected final T entity;
+    protected final UUID uuid;
     protected final CharacterManager characterManager;
 
     protected CharacterEntity(final CombatEnhanced plugin, final T entity) {
         this.entity = entity;
         this.characterManager = plugin.getModule(CharacterManager.class);
+        this.uuid = entity.getUniqueId();
 
     }
 
     public T getEntity() {
         return entity;
+    }
+
+    public UUID getUniqueId() {
+        return uuid;
     }
 
     /**

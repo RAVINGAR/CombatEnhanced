@@ -10,7 +10,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public abstract class IdentifierRunner<T extends CombatEvent<?, E>, E extends Event> extends EventRunner<T, E> {
+public abstract class IdentifierRunner<T extends CombatEvent<?>, E extends Event> extends EventRunner<T, E> {
     protected final Settings settings;
     private final ConcurrentHashMap<UUID, T> events;
 
@@ -62,6 +62,7 @@ public abstract class IdentifierRunner<T extends CombatEvent<?, E>, E extends Ev
             events.put(event.getCharacter().getEntity().getUniqueId(), event);
         }
     }
+
 
     public void remove(@NotNull final UUID uuid) {
         final T event = events.get(uuid);

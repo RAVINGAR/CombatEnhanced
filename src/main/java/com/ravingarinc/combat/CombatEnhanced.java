@@ -127,9 +127,11 @@ public final class CombatEnhanced extends JavaPlugin {
         } else {
             CombatEnhanced.log(Level.WARNING, "%s module/s have failed to load! Please check your logs!", (modules.size() - loaded));
         }
+        handler.load();
     }
 
     public void reload() {
+        handler.cancel();
         modules.values().forEach(manager -> {
             try {
                 manager.initReload();
