@@ -18,7 +18,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 
 public class BlockRunner extends IdentifierRunner<PlayerBlockEvent, EntityDamageByEntityEvent> {
-    private final RPGHandler handler;
+    protected final RPGHandler handler;
 
     public BlockRunner(final Settings settings, final CombatEnhanced plugin) {
         super(settings);
@@ -70,7 +70,7 @@ public class BlockRunner extends IdentifierRunner<PlayerBlockEvent, EntityDamage
         return false;
     }
 
-    protected void handlePostEvent(final EntityDamageByEntityEvent event, final LivingEntity defender, final double mitigation) {
+    private void handlePostEvent(final EntityDamageByEntityEvent event, final LivingEntity defender, final double mitigation) {
         final double damage = event.getDamage() * (1.0 - mitigation);
         if (damage > 0) {
             event.setDamage(damage);

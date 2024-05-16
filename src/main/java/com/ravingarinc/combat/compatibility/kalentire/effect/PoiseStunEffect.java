@@ -11,13 +11,9 @@ import com.herocraftonline.heroes.characters.Monster;
 import com.herocraftonline.heroes.characters.effects.Effect;
 import com.herocraftonline.heroes.characters.effects.EffectType;
 import com.herocraftonline.heroes.characters.effects.PeriodicExpirableEffect;
-import com.ravingarinc.api.I;
 import com.ravingarinc.combat.CombatEnhanced;
 import com.ravingarinc.combat.file.Settings;
-import org.bukkit.Particle;
-import org.bukkit.Sound;
-import org.bukkit.SoundCategory;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -27,8 +23,8 @@ import org.bukkit.potion.PotionEffectType;
 
 import java.util.logging.Level;
 
-public class PoiseBreakEffect extends PeriodicExpirableEffect {
-    public static final String EFFECT_NAME = "PoiseBreakEffect";
+public class PoiseStunEffect extends PeriodicExpirableEffect {
+    public static final String EFFECT_NAME = "PoiseStunEffect";
 
     public static Listener LISTENER = null;
 
@@ -44,15 +40,16 @@ public class PoiseBreakEffect extends PeriodicExpirableEffect {
     private final double vulnerability;
     private final long cooldown;
     private final AtomicDouble bonusVulnerability = new AtomicDouble(0);
-    public PoiseBreakEffect(long duration, long cooldown, double vulnerability) {
-        super(null, EFFECT_NAME, null, 100L, duration, null, null);
+    public PoiseStunEffect(long duration, long cooldown, double vulnerability) {
+        super(null, EFFECT_NAME, null, 500L, duration, null, null);
         this.vulnerability = vulnerability;
         this.cooldown = cooldown;
         this.types.add(EffectType.STUN);
         this.types.add(EffectType.HARMFUL);
         this.types.add(EffectType.PHYSICAL);
         this.types.add(EffectType.DISABLE);
-        this.types.add(EffectType.SAFEFALL);
+        this.types.add(EffectType.STAMINA_REGEN_FREEZING);
+        this.types.add(EffectType.MANA_REGEN_FREEZING);
         this.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, (int)(20L * duration / 1000L), 127));
         this.addPotionEffect(new PotionEffect(PotionEffectType.JUMP, (int)(20L * duration / 1000L), 127));
     }
@@ -67,9 +64,16 @@ public class PoiseBreakEffect extends PeriodicExpirableEffect {
     }
 
     @Override
+    public void applyToHero(Hero hero) {
+        super.applyToHero(hero);
+        hero.getPlayer().setCooldown(Material.SHIELD, (int) (getDuration() / 50L));
+    }
+
+    @Override
     public void tick(CharacterTemplate character) {
         super.tick(character);
         LivingEntity entity = character.getEntity();
+        entity.getWorld().spawnParticle(Particle.VILLAGER_ANGRY, entity.getEyeLocation().add(0, 1.0, 0), 1);
         if(entity.isDead() || entity.getHealth() <= 0.0) {
             character.removeEffect(this);
         }
@@ -102,7 +106,7 @@ public class PoiseBreakEffect extends PeriodicExpirableEffect {
         public void onDamageEvent(HeroesDamageEvent event) {
             final Effect effect = event.getDefender().getEffect(EFFECT_NAME);
             if(effect == null) return;
-            if(effect instanceof PoiseBreakEffect poiseEffect) {
+            if(effect instanceof PoiseStunEffect poiseEffect) {
                 final double rawDamage = event.getDamage();
                 event.setDamage(rawDamage * (1.0 + Math.min(1.0, poiseEffect.vulnerability + (poiseEffect.bonusVulnerability.addAndGet(event.getDamage() * settings.bonusVulnerability)))));
             }
@@ -110,7 +114,7 @@ public class PoiseBreakEffect extends PeriodicExpirableEffect {
 
         @EventHandler
         public void onJumpEvent(PlayerJumpEvent event) {
-            I.log(Level.WARNING, "Debug -> Player Velocity " + event.getPlayer().getVelocity().toString());
+            CombatEnhanced.log(Level.WARNING, "Debug -> Player Velocity " + event.getPlayer().getVelocity().toString());
             if(characterManager.getCharacter(event.getPlayer()).hasEffect(EFFECT_NAME)) {
                 event.setCancelled(true);
             }

@@ -3,6 +3,8 @@ package com.ravingarinc.combat.combat.event;
 import com.ravingarinc.combat.api.AsynchronousException;
 import com.ravingarinc.combat.character.CharacterPlayer;
 import com.ravingarinc.combat.file.Settings;
+import io.lumine.mythic.lib.api.player.MMOPlayerData;
+import org.bukkit.Material;
 import org.jetbrains.annotations.Async;
 import org.jetbrains.annotations.Blocking;
 
@@ -21,7 +23,12 @@ public class PlayerBlockEvent extends CombatEvent<CharacterPlayer> {
     @Async.Execute
     @Blocking
     public void tick() throws AsynchronousException {
-        if (System.currentTimeMillis() > getExpireTime() || !entity.isBlocking()) {
+        if (System.currentTimeMillis() > getExpireTime()) {
+            interrupt();
+        }
+        if(!entity.isBlocking()) {
+            final var recovery = (int) MMOPlayerData.get(entity.getUniqueId()).getStatMap().getStat("BLOCK_RECOVERY");
+            entity.getEntity().setCooldown(Material.SHIELD, recovery);
             interrupt();
         }
     }

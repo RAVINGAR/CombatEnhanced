@@ -2,16 +2,14 @@ package com.ravingarinc.combat.combat.runner;
 
 import com.herocraftonline.heroes.api.events.HeroesDamageEvent;
 import com.herocraftonline.heroes.characters.CharacterTemplate;
-import com.herocraftonline.heroes.characters.Hero;
 import com.ravingarinc.combat.CombatEnhanced;
 import com.ravingarinc.combat.api.BukkitApi;
 import com.ravingarinc.combat.character.CharacterManager;
 import com.ravingarinc.combat.combat.event.DamageEvent;
 import com.ravingarinc.combat.compatibility.kalentire.KalentireHandler;
-import com.ravingarinc.combat.compatibility.kalentire.effect.PoiseBreakEffect;
+import com.ravingarinc.combat.compatibility.kalentire.effect.PoiseStunEffect;
 import com.ravingarinc.combat.compatibility.kalentire.effect.PoiseImmunityEffect;
 import com.ravingarinc.combat.file.Settings;
-import io.lumine.mythic.lib.api.player.MMOPlayerData;
 import org.bukkit.Bukkit;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
@@ -59,23 +57,23 @@ public class PoiseRunner extends BukkitRunnable {
     @BukkitApi
     public void handle(final HeroesDamageEvent event) {
         final CharacterTemplate character = event.getDefender();
-        if(character.hasEffect(PoiseBreakEffect.EFFECT_NAME)) {
+        if(character.hasEffect(PoiseStunEffect.EFFECT_NAME)) {
             return;
         }
         final var entity = characterManager.getCharacter(character.getEntity()).orElseThrow();
         final var set = mappedEvents.computeIfAbsent(entity.getEntity().getUniqueId(), u -> ConcurrentHashMap.newKeySet());
-        final var impact = (event.getAttacker() instanceof Hero hero) ? MMOPlayerData.get(hero.getPlayer()).getStatMap().getStat(KalentireHandler.IMPACT) : 0.0;
+        final var impact = KalentireHandler.getImpact(entity.getEntity());
         set.add(new DamageEvent(entity, event.getDamage() + impact, System.currentTimeMillis(), settings));
         if(character.hasEffect(PoiseImmunityEffect.EFFECT_NAME)) {
             return;
         }
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             final var poiseDamage = set.stream().mapToDouble(DamageEvent::getDamage).sum();
-            final var damageOverPoise = poiseDamage - (handler.getPoise(entity));
+            final var damageOverPoise = poiseDamage - (handler.getPoise(entity.getEntity()));
             if(damageOverPoise <= 0) {
                 return; // Still below poise
             }
-            character.addEffect(new PoiseBreakEffect((int)(damageOverPoise / settings.stunThreshold) * settings.stunDurationPerThreshold, settings.stunCooldown, damageOverPoise * settings.vulnerabilityPerPoise));
+            character.addEffect(new PoiseStunEffect((int)(damageOverPoise / settings.stunThreshold) * settings.stunDurationPerThreshold, settings.stunCooldown, damageOverPoise * settings.vulnerabilityPerPoise));
             // Now we do the fun stuff -> Applying a stun event
         });
     }

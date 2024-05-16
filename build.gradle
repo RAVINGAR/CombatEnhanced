@@ -70,12 +70,16 @@ dependencies {
     compileOnly 'net.Indyuce:MMOItems-API:6.9.2-SNAPSHOT'
     compileOnly 'io.lumine:MythicLib-dist:1.5.2-SNAPSHOT'
     compileOnly 'com.comphenix.protocol:ProtocolLib:5.1.0'
+    compileOnly 'com.ravingarinc.kalentirerpg:Kalentire:1.20.1'
+
 
     bukkitLibrary 'org.jetbrains:annotations:23.1.0'
 
-    implementation("com.github.RAVINGAR.RavinAPI:common:v1.4.3")
-    implementation("com.github.RAVINGAR.RavinAPI:module:v1.4.3")
+    //implementation("com.github.RAVINGAR.RavinAPI:common:v1.4.3")
+    //implementation("com.github.RAVINGAR.RavinAPI:module:v1.4.3")
     implementation("com.github.RAVINGAR.RavinAPI:concurrent:v1.4.3")
+
+    compileOnly 'io.lumine:Mythic-Dist:5.5.0'
 
     testImplementation 'org.jetbrains:annotations:23.1.0'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0'

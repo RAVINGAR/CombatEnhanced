@@ -4,19 +4,17 @@ import com.herocraftonline.heroes.Heroes;
 import com.herocraftonline.heroes.api.events.HeroesDamageEvent;
 import com.herocraftonline.heroes.characters.CharacterManager;
 import com.herocraftonline.heroes.characters.Hero;
-import com.ravingarinc.api.I;
-import com.ravingarinc.api.Sync;
 import com.ravingarinc.combat.CombatEnhanced;
-import com.ravingarinc.combat.character.CharacterEntity;
-import com.ravingarinc.combat.character.CharacterMonster;
-import com.ravingarinc.combat.character.CharacterPlayer;
 import com.ravingarinc.combat.combat.CombatManager;
 import com.ravingarinc.combat.combat.runner.PoiseRunner;
 import com.ravingarinc.combat.compatibility.RPGHandler;
-import com.ravingarinc.combat.compatibility.kalentire.effect.PoiseBreakEffect;
+import com.ravingarinc.combat.compatibility.kalentire.effect.PoiseStunEffect;
 import com.ravingarinc.combat.file.Settings;
+import io.lumine.mythic.bukkit.MythicBukkit;
 import io.lumine.mythic.lib.api.player.MMOPlayerData;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
@@ -43,7 +41,9 @@ public class KalentireHandler implements RPGHandler, Listener {
 
     public static final String STAMINA_DRAIN = "HEROES_STAMINA_DRAIN";
 
-    public static final String BLOCK_COOLDOWN = "BLOCK_COOLDOWN";
+    public static final String BLOCK_RECOVERY = "BLOCK_RECOVERY";
+
+    public static final String PERFECT_BLOCK_BONUS = "PERFECT_BLOCK_BONUS";
 
 
 
@@ -57,7 +57,7 @@ public class KalentireHandler implements RPGHandler, Listener {
     @Override
     public void load() {
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
-        PoiseBreakEffect.register(plugin);
+        PoiseStunEffect.register(plugin);
 
         poiseRunner = new PoiseRunner(plugin, this);
         poiseRunner.runTaskTimerAsynchronously(plugin, 0L, 5L);
@@ -66,7 +66,7 @@ public class KalentireHandler implements RPGHandler, Listener {
     @Override
     public void cancel() {
         HandlerList.unregisterAll(this);
-        PoiseBreakEffect.unregister();
+        PoiseStunEffect.unregister();
 
         poiseRunner.cancel();
     }
@@ -103,7 +103,7 @@ public class KalentireHandler implements RPGHandler, Listener {
     @Override
     public float getDodgeStrength(final Player player) {
         final var speed = (float)player.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).getValue();
-        I.log(Level.WARNING, "Debug -> Player's Speed is " + speed);
+        CombatEnhanced.log(Level.WARNING, "Debug -> Player's Speed is " + speed);
         return Math.min(1.0F, (0.9F - (0.13F - speed))); // TODO Figure out this formula
     }
 
@@ -116,7 +116,11 @@ public class KalentireHandler implements RPGHandler, Listener {
     @Override
     public long getShieldCooldown(final Player player) {
         final var data = MMOPlayerData.get(player);
-        return (int) data.getStatMap().getStat(BLOCK_COOLDOWN) / 50L;
+        return (int) data.getStatMap().getStat(BLOCK_RECOVERY) / 50L;
+    }
+
+    public static double getPerfectBlockBonus(final Player player) {
+        return MMOPlayerData.get(player).getStatMap().getStat(PERFECT_BLOCK_BONUS);
     }
 
     @Override
@@ -124,25 +128,45 @@ public class KalentireHandler implements RPGHandler, Listener {
         return settings;
     }
 
-    @Sync.AsyncOnly
-    public double getPoise(CharacterEntity<?> character) {
-        if(character instanceof CharacterPlayer player) {
+    public double getPoise(LivingEntity character) {
+        if(character instanceof Player player) {
             return settings.poiseBaseThreshold + getPoiseForPlayer(player);
-        } else if(character instanceof CharacterMonster monster) {
+        } else if(character instanceof Monster monster) {
             return settings.poiseBaseThreshold + getPoiseForMonster(monster);
         }
         return settings.poiseBaseThreshold;
     }
 
-    private double getPoiseForPlayer(CharacterPlayer player) {
+    private double getPoiseForPlayer(Player player) {
         final var data = MMOPlayerData.getOrNull(player.getUniqueId());
         if(data == null) return 0.0;
         return data.getStatMap().getStat(POISE);
     }
 
-    private double getPoiseForMonster(CharacterMonster monster) {
-        // TODO these nuts
-        //   check if mythic mob and get poise from them
+    private double getPoiseForMonster(Monster monster) {
+        final var mob = MythicBukkit.inst().getMobManager().getActiveMob(monster.getUniqueId());
+        if(mob.isEmpty()) return 0.0;
+        final var activeMob = mob.get();
+        // todo figure this out
+        return 0.0;
+    }
+
+    public static double getImpact(LivingEntity character) {
+        if(character instanceof Player player) {
+            return getImpactForPlayer(player);
+        } else if(character instanceof Monster monster) {
+            return getImpactForMonster(monster);
+        }
+        return 0.0;
+    }
+
+    private static double getImpactForPlayer(Player player) {
+        return MMOPlayerData.get(player.getUniqueId()).getStatMap().getStat(KalentireHandler.IMPACT);
+    }
+
+    private static double getImpactForMonster(Monster monster) {
+        // todo deez nuts
+
         return 0.0;
     }
 
