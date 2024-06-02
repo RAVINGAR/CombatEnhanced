@@ -60,6 +60,7 @@ combat-features:
       - PROJECTILE
   poise:
     window: 2000 # The window in which damage available is taken
+    mob-default-poise: 40
     stun-threshold: 5
     stun-duration-per-threshold: 500 # The duration of the stun applied per every `stun-threshold` taken over a creature's poise
     max-stun-duration: 3000 # The maximum duration of a stun

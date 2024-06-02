@@ -5,6 +5,7 @@ import com.ravingarinc.combat.character.CharacterEntity;
 import org.jetbrains.annotations.Async;
 import org.jetbrains.annotations.Blocking;
 
+import java.util.Objects;
 import java.util.concurrent.Callable;
 
 /**
@@ -15,9 +16,9 @@ import java.util.concurrent.Callable;
  */
 public abstract class CombatEvent<T extends CharacterEntity<?>> implements Callable<Boolean> {
     protected final T entity;
-    private final long expireTime;
+    protected final long expireTime;
     private final Object lock = new Object();
-    private boolean interrupted;
+    protected boolean interrupted;
 
     /**
      * @param duration Duration in milliseconds
@@ -82,19 +83,15 @@ public abstract class CombatEvent<T extends CharacterEntity<?>> implements Calla
 
 
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        final CombatEvent<?> that = (CombatEvent<?>) o;
-        return entity.equals(that.entity);
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CombatEvent<?> that = (CombatEvent<?>) o;
+        return expireTime == that.expireTime && Objects.equals(entity, that.entity);
     }
 
     @Override
     public int hashCode() {
-        return entity.hashCode();
+        return Objects.hash(entity, expireTime);
     }
 }

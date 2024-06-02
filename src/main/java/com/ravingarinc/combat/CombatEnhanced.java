@@ -88,7 +88,8 @@ public final class CombatEnhanced extends JavaPlugin {
 
 
         loadModules();
-        handler = RPGHandler.getHandler(this);
+
+
         validateLoad();
 
         getCommand("combatreload").setExecutor(new ReloadCommand());
@@ -105,6 +106,8 @@ public final class CombatEnhanced extends JavaPlugin {
         // add listeners
         addModule(CombatListener.class);
         addModule(CharacterListener.class);
+
+        handler = RPGHandler.getHandler(this);
 
         // load modules
         modules.values().forEach(manager -> {

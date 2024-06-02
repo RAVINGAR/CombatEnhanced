@@ -61,8 +61,10 @@ public class PoiseStunEffect extends PeriodicExpirableEffect {
         super.apply(character);
         LivingEntity entity = character.getEntity();
         World world = entity.getWorld();
+        Location location = entity.getEyeLocation();
         world.playSound(entity, Sound.ITEM_SHIELD_BREAK, SoundCategory.HOSTILE, 1.0F, 1.0F);
-        world.spawnParticle(Particle.CRIT, entity.getEyeLocation(), 20, 1, 1, 1);
+        world.spawnParticle(Particle.CRIT, location, 20, 1, 1, 1);
+        world.spawnParticle(Particle.VILLAGER_ANGRY, location.add(0.0, 0.2, 0.0), 1);
         if(applierEntity instanceof Player player) {
             player.playSound(entity, Sound.ENTITY_ARROW_HIT_PLAYER, 1.0F, 1.0F);
         }
@@ -79,7 +81,7 @@ public class PoiseStunEffect extends PeriodicExpirableEffect {
     public void tick(CharacterTemplate character) {
         super.tick(character);
         LivingEntity entity = character.getEntity();
-        entity.getWorld().spawnParticle(Particle.VILLAGER_ANGRY, entity.getEyeLocation().add(0, 1.0, 0), 1);
+        entity.getWorld().spawnParticle(Particle.VILLAGER_ANGRY, entity.getEyeLocation().add(0, 0.2, 0), 1);
         if(entity.isDead() || entity.getHealth() <= 0.0) {
             character.removeEffect(this);
         }

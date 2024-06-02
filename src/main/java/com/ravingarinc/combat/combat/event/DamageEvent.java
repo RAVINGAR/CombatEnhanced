@@ -4,6 +4,8 @@ import com.ravingarinc.combat.api.AsynchronousException;
 import com.ravingarinc.combat.character.CharacterEntity;
 import com.ravingarinc.combat.file.Settings;
 
+import java.util.Objects;
+
 public class DamageEvent extends CombatEvent<CharacterEntity<?>> {
     private final double damage;
     public DamageEvent(CharacterEntity<?> entity, double damage, long startTime, Settings settings) {
@@ -19,5 +21,22 @@ public class DamageEvent extends CombatEvent<CharacterEntity<?>> {
     protected void tick() throws AsynchronousException {
         // Todo implement, basically if the character has an immunity from poise active, then prevent them from gaining
         // any more poise
+        if(System.currentTimeMillis() > getExpireTime()) {
+            interrupt();
+        }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        DamageEvent that = (DamageEvent) o;
+        return Double.compare(damage, that.damage) == 0;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), damage);
     }
 }

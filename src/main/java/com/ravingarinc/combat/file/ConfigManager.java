@@ -68,6 +68,7 @@ public class ConfigManager extends Module {
 
         if(consumeSection(section, "poise", (child) -> {
             wrap(() -> child.getLong("window")).ifPresent(b -> settings.poiseWindow = b);
+            wrap(() -> child.getDouble("mob-default-poise")).ifPresent(b -> settings.mobDefaultPoise = b);
             wrap(() -> child.getDouble("stun-threshold")).ifPresent(b -> settings.stunThreshold = b.floatValue());
             wrap(() -> child.getLong("stun-duration-per-threshold")).ifPresent(b -> settings.stunDurationPerThreshold = b);
             wrap(() -> child.getLong("max-stun-duration")).ifPresent(b -> settings.maxStunDuration = b);

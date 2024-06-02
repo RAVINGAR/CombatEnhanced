@@ -7,8 +7,8 @@ import com.ravingarinc.combat.api.BukkitApi;
 import com.ravingarinc.combat.character.CharacterManager;
 import com.ravingarinc.combat.combat.event.DamageEvent;
 import com.ravingarinc.combat.compatibility.kalentire.KalentireHandler;
-import com.ravingarinc.combat.compatibility.kalentire.effect.PoiseStunEffect;
 import com.ravingarinc.combat.compatibility.kalentire.effect.PoiseImmunityEffect;
+import com.ravingarinc.combat.compatibility.kalentire.effect.PoiseStunEffect;
 import com.ravingarinc.combat.file.Settings;
 import org.bukkit.Bukkit;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -55,7 +55,7 @@ public class PoiseRunner extends BukkitRunnable {
     }
 
     @BukkitApi
-    public void handle(final HeroesDamageEvent event) {
+    public void handle(final HeroesDamageEvent event, final double damage) {
         final CharacterTemplate character = event.getDefender();
         final var opt = characterManager.getCharacter(character.getEntity());
         if(opt.isEmpty()) {
@@ -65,19 +65,22 @@ public class PoiseRunner extends BukkitRunnable {
             return;
         }
         final var entity = opt.get();
-        final var set = mappedEvents.computeIfAbsent(entity.getEntity().getUniqueId(), u -> ConcurrentHashMap.newKeySet());
+        final var set = mappedEvents.computeIfAbsent(character.getUUID(), u -> ConcurrentHashMap.newKeySet());
         final var impact = KalentireHandler.getImpact(entity.getEntity());
-        set.add(new DamageEvent(entity, event.getDamage() + impact, System.currentTimeMillis(), settings));
+        set.add(new DamageEvent(entity, damage + impact, System.currentTimeMillis(), settings));
         if(character.hasEffect(PoiseImmunityEffect.EFFECT_NAME)) {
             return;
         }
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-            final var poiseDamage = set.stream().mapToDouble(DamageEvent::getDamage).sum();
+            var poiseDamage = 0.0;
+            for (DamageEvent damageEvent : set) {
+                poiseDamage += damageEvent.getDamage();
+            }
             final var damageOverPoise = poiseDamage - (handler.getPoise(entity.getEntity()));
             if(damageOverPoise <= 0) {
                 return; // Still below poise
             }
-            character.addEffect(new PoiseStunEffect(event.getAttacker().getEntity(), (int)(damageOverPoise / settings.stunThreshold) * settings.stunDurationPerThreshold, settings.stunCooldown, damageOverPoise * settings.vulnerabilityPerPoise));
+            Bukkit.getScheduler().runTask(plugin, () -> character.addEffect(new PoiseStunEffect(event.getAttacker().getEntity(), (int)(damageOverPoise / settings.stunThreshold) * settings.stunDurationPerThreshold, settings.stunCooldown, damageOverPoise * settings.vulnerabilityPerPoise)));
             // Now we do the fun stuff -> Applying a stun event
         });
     }

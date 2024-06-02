@@ -2,6 +2,8 @@ package com.ravingarinc.combat.compatibility.kalentire;
 
 import com.herocraftonline.heroes.Heroes;
 import com.herocraftonline.heroes.api.events.HeroesDamageEvent;
+import com.herocraftonline.heroes.api.events.ProjectileDamageEvent;
+import com.herocraftonline.heroes.api.events.WeaponDamageEvent;
 import com.herocraftonline.heroes.characters.CharacterManager;
 import com.herocraftonline.heroes.characters.Hero;
 import com.ravingarinc.combat.CombatEnhanced;
@@ -11,12 +13,14 @@ import com.ravingarinc.combat.compatibility.RPGHandler;
 import com.ravingarinc.combat.compatibility.kalentire.effect.PoiseStunEffect;
 import com.ravingarinc.combat.file.Settings;
 import io.lumine.mythic.bukkit.MythicBukkit;
+import io.lumine.mythic.lib.MythicLib;
 import io.lumine.mythic.lib.api.player.MMOPlayerData;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDeathEvent;
@@ -132,7 +136,7 @@ public class KalentireHandler implements RPGHandler, Listener {
         } else if(character instanceof Monster monster) {
             return getPoiseForMonster(monster);
         }
-        return 40.0;
+        return settings.mobDefaultPoise;
     }
 
     private double getPoiseForPlayer(Player player) {
@@ -143,10 +147,10 @@ public class KalentireHandler implements RPGHandler, Listener {
 
     private double getPoiseForMonster(Monster monster) {
         final var mob = MythicBukkit.inst().getMobManager().getActiveMob(monster.getUniqueId());
-        if(mob.isEmpty()) return 0.0;
-        final var activeMob = mob.get();
+        if(mob.isEmpty()) return settings.mobDefaultPoise;
+        //final var activeMob = mob.get();
         // todo figure this out
-        return 40.0;
+        return settings.mobDefaultPoise;
     }
 
     public static double getImpact(LivingEntity character) {
@@ -169,12 +173,14 @@ public class KalentireHandler implements RPGHandler, Listener {
     }
 
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGH)
     public void onHeroesDamageEvent(final HeroesDamageEvent event) {
-        if(event.getDamage() == 0) {
-            return;
+        double damage = event.getDamage();
+        if(event instanceof WeaponDamageEvent || event instanceof ProjectileDamageEvent) {
+            final var metadata = MythicLib.plugin.getDamage().findAttack(event.getOriginalEvent());
+            damage = metadata.getDamage().getDamage();
         }
-        poiseRunner.handle(event);
+        poiseRunner.handle(event, damage);
     }
 
     @EventHandler

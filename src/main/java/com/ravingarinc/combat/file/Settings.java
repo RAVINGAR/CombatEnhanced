@@ -37,6 +37,8 @@ public class Settings {
 
     public long poiseWindow = 2000L;
 
+    public double mobDefaultPoise = 40.0;
+
     public double stunThreshold = 5f;
 
     public long stunDurationPerThreshold = 500L;
