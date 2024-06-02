@@ -20,7 +20,7 @@ public class DodgeRunner extends IdentifierRunner<DodgeEvent, EntityDamageByEnti
         final LivingEntity entity = (LivingEntity) event.getEntity();
         if (settings.dodgeDamageCauses.contains(event.getCause())) {
             if (entity instanceof Player player) {
-                entity.sendMessage(ChatColor.RED + "You dodged the attack!");
+                entity.sendMessage(ChatColor.RED + "< You dodged the attack! >");
                 player.playSound(player, Sound.ENTITY_ARROW_HIT_PLAYER, 1.0F, 1.0F);
             }
             event.setDamage(event.getDamage() * (1.0 - settings.dodgeMitigation));

@@ -115,7 +115,7 @@ artifacts {
 
 tasks.register("copyToDev", Copy) {
     from shadowJar
-    into project.layout.projectDirectory.dir("../../Desktop/Programming/Server/plugins")
+    into project.layout.projectDirectory.dir("../../Desktop/Programming/Servers/Latest/plugins")
 }
 
 assemble {

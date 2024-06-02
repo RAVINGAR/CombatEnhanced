@@ -35,8 +35,6 @@ public class Settings {
 
     public List<EntityDamageEvent.DamageCause> blockDamageCauses = new ArrayList<>();
 
-    public double poiseBaseThreshold = 40f;
-
     public long poiseWindow = 2000L;
 
     public double stunThreshold = 5f;

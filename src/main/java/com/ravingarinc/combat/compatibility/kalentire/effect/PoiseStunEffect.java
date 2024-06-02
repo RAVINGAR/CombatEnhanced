@@ -14,14 +14,14 @@ import com.herocraftonline.heroes.characters.effects.PeriodicExpirableEffect;
 import com.ravingarinc.combat.CombatEnhanced;
 import com.ravingarinc.combat.file.Settings;
 import org.bukkit.*;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-
-import java.util.logging.Level;
 
 public class PoiseStunEffect extends PeriodicExpirableEffect {
     public static final String EFFECT_NAME = "PoiseStunEffect";
@@ -39,11 +39,13 @@ public class PoiseStunEffect extends PeriodicExpirableEffect {
     }
     private final double vulnerability;
     private final long cooldown;
+    private final Entity applierEntity;
     private final AtomicDouble bonusVulnerability = new AtomicDouble(0);
-    public PoiseStunEffect(long duration, long cooldown, double vulnerability) {
+    public PoiseStunEffect(Entity applierEntity, long duration, long cooldown, double vulnerability) {
         super(null, EFFECT_NAME, null, 500L, duration, null, null);
         this.vulnerability = vulnerability;
         this.cooldown = cooldown;
+        this.applierEntity = applierEntity;
         this.types.add(EffectType.STUN);
         this.types.add(EffectType.HARMFUL);
         this.types.add(EffectType.PHYSICAL);
@@ -61,11 +63,15 @@ public class PoiseStunEffect extends PeriodicExpirableEffect {
         World world = entity.getWorld();
         world.playSound(entity, Sound.ITEM_SHIELD_BREAK, SoundCategory.HOSTILE, 1.0F, 1.0F);
         world.spawnParticle(Particle.CRIT, entity.getEyeLocation(), 20, 1, 1, 1);
+        if(applierEntity instanceof Player player) {
+            player.playSound(entity, Sound.ENTITY_ARROW_HIT_PLAYER, 1.0F, 1.0F);
+        }
     }
 
     @Override
     public void applyToHero(Hero hero) {
         super.applyToHero(hero);
+        hero.getPlayer().sendMessage(ChatColor.RED + "< You have suffered a poise break! >");
         hero.getPlayer().setCooldown(Material.SHIELD, (int) (getDuration() / 50L));
     }
 
@@ -114,7 +120,7 @@ public class PoiseStunEffect extends PeriodicExpirableEffect {
 
         @EventHandler
         public void onJumpEvent(PlayerJumpEvent event) {
-            CombatEnhanced.log(Level.WARNING, "Debug -> Player Velocity " + event.getPlayer().getVelocity().toString());
+            //CombatEnhanced.log(Level.WARNING, "Debug -> Player Velocity " + event.getPlayer().getVelocity().toString());
             if(characterManager.getCharacter(event.getPlayer()).hasEffect(EFFECT_NAME)) {
                 event.setCancelled(true);
             }

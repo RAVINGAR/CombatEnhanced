@@ -67,7 +67,6 @@ public class ConfigManager extends Module {
         }
 
         if(consumeSection(section, "poise", (child) -> {
-            wrap(() -> child.getDouble("base-threshold")).ifPresent(b -> settings.poiseBaseThreshold = b.floatValue());
             wrap(() -> child.getLong("window")).ifPresent(b -> settings.poiseWindow = b);
             wrap(() -> child.getDouble("stun-threshold")).ifPresent(b -> settings.stunThreshold = b.floatValue());
             wrap(() -> child.getLong("stun-duration-per-threshold")).ifPresent(b -> settings.stunDurationPerThreshold = b);

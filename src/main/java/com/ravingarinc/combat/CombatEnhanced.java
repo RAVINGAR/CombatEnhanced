@@ -85,9 +85,10 @@ public final class CombatEnhanced extends JavaPlugin {
         // Plugin startup logic
         AsyncHandler.load(this);
 
-        handler = RPGHandler.getHandler(this);
+
 
         loadModules();
+        handler = RPGHandler.getHandler(this);
         validateLoad();
 
         getCommand("combatreload").setExecutor(new ReloadCommand());

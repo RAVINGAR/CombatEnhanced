@@ -3,15 +3,15 @@ package com.ravingarinc.combat.character;
 import com.ravingarinc.combat.CombatEnhanced;
 import com.ravingarinc.combat.api.AsyncHandler;
 import com.ravingarinc.combat.api.AsynchronousException;
-import org.bukkit.entity.Monster;
+import org.bukkit.entity.Mob;
 import org.jetbrains.annotations.Async;
 import org.jetbrains.annotations.Blocking;
 
 import java.util.Optional;
 
-public class CharacterMonster extends CharacterEntity<Monster> {
+public class CharacterMonster extends CharacterEntity<Mob> {
 
-    protected CharacterMonster(final CombatEnhanced plugin, final Monster entity) {
+    protected CharacterMonster(final CombatEnhanced plugin, final Mob entity) {
         super(plugin, entity);
     }
 

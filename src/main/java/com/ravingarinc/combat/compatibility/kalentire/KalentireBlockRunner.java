@@ -49,7 +49,7 @@ public class KalentireBlockRunner extends BlockRunner {
                 handlePostEvent(event, defender, 1.0);
                 final var hero = manager.getHero(defender);
                 final var ticks = requiredStamina - hero.getStamina();
-                hero.addEffect(new PoiseStunEffect(ticks * 50L, settings.stunCooldown, 0.0));
+                hero.addEffect(new PoiseStunEffect(event.getDamager(), ticks * 50L, settings.stunCooldown, 0.0));
             }
             return true;
         }

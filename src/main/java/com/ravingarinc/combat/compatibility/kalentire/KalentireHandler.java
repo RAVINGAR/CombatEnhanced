@@ -22,8 +22,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
-import java.util.logging.Level;
-
 public class KalentireHandler implements RPGHandler, Listener {
     private final CombatEnhanced plugin;
     private CharacterManager manager = null;
@@ -103,7 +101,7 @@ public class KalentireHandler implements RPGHandler, Listener {
     @Override
     public float getDodgeStrength(final Player player) {
         final var speed = (float)player.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).getValue();
-        CombatEnhanced.log(Level.WARNING, "Debug -> Player's Speed is " + speed);
+        //CombatEnhanced.log(Level.WARNING, "Debug -> Player's Speed is " + speed);
         return Math.min(1.0F, (0.9F - (0.13F - speed))); // TODO Figure out this formula
     }
 
@@ -130,11 +128,11 @@ public class KalentireHandler implements RPGHandler, Listener {
 
     public double getPoise(LivingEntity character) {
         if(character instanceof Player player) {
-            return settings.poiseBaseThreshold + getPoiseForPlayer(player);
+            return getPoiseForPlayer(player);
         } else if(character instanceof Monster monster) {
-            return settings.poiseBaseThreshold + getPoiseForMonster(monster);
+            return getPoiseForMonster(monster);
         }
-        return settings.poiseBaseThreshold;
+        return 40.0;
     }
 
     private double getPoiseForPlayer(Player player) {
@@ -148,7 +146,7 @@ public class KalentireHandler implements RPGHandler, Listener {
         if(mob.isEmpty()) return 0.0;
         final var activeMob = mob.get();
         // todo figure this out
-        return 0.0;
+        return 40.0;
     }
 
     public static double getImpact(LivingEntity character) {

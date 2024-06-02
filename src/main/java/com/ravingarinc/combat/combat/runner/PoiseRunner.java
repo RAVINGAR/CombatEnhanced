@@ -57,10 +57,14 @@ public class PoiseRunner extends BukkitRunnable {
     @BukkitApi
     public void handle(final HeroesDamageEvent event) {
         final CharacterTemplate character = event.getDefender();
+        final var opt = characterManager.getCharacter(character.getEntity());
+        if(opt.isEmpty()) {
+            return;
+        }
         if(character.hasEffect(PoiseStunEffect.EFFECT_NAME)) {
             return;
         }
-        final var entity = characterManager.getCharacter(character.getEntity()).orElseThrow();
+        final var entity = opt.get();
         final var set = mappedEvents.computeIfAbsent(entity.getEntity().getUniqueId(), u -> ConcurrentHashMap.newKeySet());
         final var impact = KalentireHandler.getImpact(entity.getEntity());
         set.add(new DamageEvent(entity, event.getDamage() + impact, System.currentTimeMillis(), settings));
@@ -73,7 +77,7 @@ public class PoiseRunner extends BukkitRunnable {
             if(damageOverPoise <= 0) {
                 return; // Still below poise
             }
-            character.addEffect(new PoiseStunEffect((int)(damageOverPoise / settings.stunThreshold) * settings.stunDurationPerThreshold, settings.stunCooldown, damageOverPoise * settings.vulnerabilityPerPoise));
+            character.addEffect(new PoiseStunEffect(event.getAttacker().getEntity(), (int)(damageOverPoise / settings.stunThreshold) * settings.stunDurationPerThreshold, settings.stunCooldown, damageOverPoise * settings.vulnerabilityPerPoise));
             // Now we do the fun stuff -> Applying a stun event
         });
     }

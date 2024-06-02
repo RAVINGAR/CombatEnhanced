@@ -3,6 +3,7 @@ package com.ravingarinc.combat.character;
 import com.ravingarinc.combat.CombatEnhanced;
 import com.ravingarinc.combat.api.Module;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Mob;
 import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -11,12 +12,7 @@ import org.jetbrains.annotations.Async;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Queue;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -75,7 +71,7 @@ public class CharacterManager extends Module {
      */
     @Async.Execute
     @NotNull
-    public CharacterMonster getMonster(@NotNull final Monster entity) {
+    public CharacterMonster getMonster(@NotNull final Mob entity) {
         final UUID uuid = entity.getUniqueId();
         CharacterMonster monster = monsterMap.get(uuid);
         if (monster == null) {
@@ -97,7 +93,7 @@ public class CharacterManager extends Module {
         if (entity instanceof Player player) {
             return Optional.of(getPlayer(player));
         }
-        if (entity instanceof Monster monster) {
+        if (entity instanceof Mob monster) {
             return Optional.of(getMonster(monster));
         }
         return Optional.empty();
