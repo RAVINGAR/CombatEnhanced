@@ -17,6 +17,7 @@ import java.util.concurrent.Callable;
 public abstract class CombatEvent<T extends CharacterEntity<?>> implements Callable<Boolean> {
     protected final T entity;
     protected final long expireTime;
+    protected final long duration;
     private final Object lock = new Object();
     protected boolean interrupted;
 
@@ -26,6 +27,7 @@ public abstract class CombatEvent<T extends CharacterEntity<?>> implements Calla
     public CombatEvent(final T entity, final long startTime, final long duration) {
         this.entity = entity;
         this.expireTime = startTime + duration;
+        this.duration = duration;
         this.interrupted = false;
     }
 

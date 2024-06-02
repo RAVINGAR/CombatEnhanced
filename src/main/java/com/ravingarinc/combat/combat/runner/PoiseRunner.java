@@ -74,7 +74,8 @@ public class PoiseRunner extends BukkitRunnable {
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             var poiseDamage = 0.0;
             for (DamageEvent damageEvent : set) {
-                poiseDamage += damageEvent.getDamage();
+                poiseDamage += damageEvent.getDamage() * damageEvent.getTimeFactor();
+                // the time factor basically decreases the value of the damage based on how close it is to expiry!
             }
             final var damageOverPoise = poiseDamage - (handler.getPoise(entity.getEntity()));
             if(damageOverPoise <= 0) {

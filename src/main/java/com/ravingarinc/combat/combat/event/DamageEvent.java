@@ -26,6 +26,14 @@ public class DamageEvent extends CombatEvent<CharacterEntity<?>> {
         }
     }
 
+    public float getTimeFactor() {
+        final var difference = expireTime - System.currentTimeMillis();
+        if(difference <= 0) {
+            return 0F;
+        }
+        return 1.0F - ((float) difference / duration);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
