@@ -42,7 +42,7 @@ public class DodgeEvent extends CombatEvent<CharacterEntity<?>> {
                       final Vector3 location,
                       final long start,
                       final Settings settings, final RPGHandler handler, final BlockData data) {
-        super(entity, start, settings.dodgeWarmup + settings.dodgeDuration);
+        super(entity, start, settings.dodgeWarmup + (entity instanceof CharacterPlayer cP ? handler.getDodgeDuration(cP.getEntity()) : settings.dodgeDuration));
         this.initialVelocity = new Vector3();
         this.settings = settings;
         this.warmup = start + settings.dodgeWarmup;

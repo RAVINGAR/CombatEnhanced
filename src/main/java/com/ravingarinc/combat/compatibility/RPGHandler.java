@@ -46,6 +46,7 @@ public interface RPGHandler {
     default int getDodgeCost(final Player player) {
         return getSettings().dodgeStaminaCost;
     }
+
     default long getShieldCooldown(final Player player) {
         return getSettings().blockCooldown;
     }

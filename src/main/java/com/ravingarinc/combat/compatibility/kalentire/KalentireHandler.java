@@ -110,10 +110,15 @@ public class KalentireHandler implements RPGHandler, Listener {
     }
 
     @Override
-    public int getDodgeCost(Player player) {
-        final var data = MMOPlayerData.get(player);
-        return (int) Math.floor(getSettings().dodgeStaminaCost * (1.0 + data.getStatMap().getStat(STAMINA_DRAIN)));
+    public long getDodgeDuration(Player player) {
+        return settings.dodgeDuration + (long) Math.floor(MMOPlayerData.get(player).getStatMap().getStat(DODGE_TICKS) * 50.0);
     }
+
+    @Override
+    public int getDodgeCost(Player player) {
+        return getSettings().dodgeStaminaCost;
+    }
+    // We dont need to consider the drain here, since heroes should do it automagically!
 
     @Override
     public long getShieldCooldown(final Player player) {

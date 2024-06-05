@@ -53,7 +53,7 @@ public class PoiseStunEffect extends PeriodicExpirableEffect {
         this.types.add(EffectType.STAMINA_REGEN_FREEZING);
         this.types.add(EffectType.MANA_REGEN_FREEZING);
         this.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, (int)(20L * duration / 1000L), 127));
-        this.addPotionEffect(new PotionEffect(PotionEffectType.JUMP, (int)(20L * duration / 1000L), 127));
+        //this.addPotionEffect(new PotionEffect(PotionEffectType.JUMP, (int)(20L * duration / 1000L), 127));
     }
 
     @Override
