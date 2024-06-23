@@ -43,6 +43,8 @@ public class Settings {
 
     public long stunDurationPerThreshold = 500L;
 
+    public long minStunDuration = 1500L;
+
     public long maxStunDuration = 3000L;
 
     public long stunCooldown = 1000L;

@@ -71,6 +71,7 @@ public class ConfigManager extends Module {
             wrap(() -> child.getDouble("mob-default-poise")).ifPresent(b -> settings.mobDefaultPoise = b);
             wrap(() -> child.getDouble("stun-threshold")).ifPresent(b -> settings.stunThreshold = b.floatValue());
             wrap(() -> child.getLong("stun-duration-per-threshold")).ifPresent(b -> settings.stunDurationPerThreshold = b);
+            wrap(() -> child.getLong("min-stun-duration")).ifPresent(b -> settings.minStunDuration = b);
             wrap(() -> child.getLong("max-stun-duration")).ifPresent(b -> settings.maxStunDuration = b);
             wrap(() -> child.getLong("stun-cooldown")).ifPresent(b -> settings.stunCooldown = b);
             wrap(() -> child.getDouble("vulnerability-per-poise")).ifPresent(b -> settings.vulnerabilityPerPoise = b);

@@ -6,6 +6,8 @@ import com.ravingarinc.combat.api.Vector3;
 import com.ravingarinc.combat.combat.event.PlayerBlockEvent;
 import com.ravingarinc.combat.compatibility.RPGHandler;
 import com.ravingarinc.combat.file.Settings;
+import io.lumine.mythic.lib.MythicLib;
+import io.lumine.mythic.lib.damage.DamageType;
 import org.bukkit.ChatColor;
 import org.bukkit.EntityEffect;
 import org.bukkit.Material;
@@ -71,8 +73,15 @@ public class BlockRunner extends IdentifierRunner<PlayerBlockEvent, EntityDamage
     }
 
     private void handlePostEvent(final EntityDamageByEntityEvent event, final LivingEntity defender, final double mitigation) {
-        final double damage = event.getDamage() * (1.0 - mitigation);
+        final double factor = (1.0 - mitigation);
+        final double damage = event.getDamage() * (1.0 - factor);
         if (damage > 0) {
+            final var meta = MythicLib.inst().getDamage().findAttack(event).getDamage();
+            meta.multiplicativeModifier(mitigation, DamageType.PHYSICAL);
+            meta.multiplicativeModifier(mitigation, DamageType.MAGIC); // TODO make this not mitigate psychic attacks
+            meta.multiplicativeModifier(mitigation, DamageType.PROJECTILE);
+            meta.multiplicativeModifier(mitigation, DamageType.SKILL);
+            meta.multiplicativeModifier(mitigation, DamageType.WEAPON);
             event.setDamage(damage);
             damageEntity(defender, damage);
         } else {

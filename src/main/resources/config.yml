@@ -63,6 +63,7 @@ combat-features:
     mob-default-poise: 40
     stun-threshold: 5
     stun-duration-per-threshold: 500 # The duration of the stun applied per every `stun-threshold` taken over a creature's poise
+    min-stun-duration: 2000
     max-stun-duration: 3000 # The maximum duration of a stun
     stun-cooldown: 1000 # After a player's stun has finished, how long are they immune from becoming stunned again
     vulnerability-per-poise: 2% #After a poise break, for every point taken over poise how much vulnerability should be applied
