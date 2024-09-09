@@ -1,20 +1,23 @@
 package com.ravingarinc.combat.character;
 
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class AtomicInput {
     private final LinkedBlockingDeque<Direction> lastInputs = new LinkedBlockingDeque<>(8);
     private final AtomicLong lastUpdateTime = new AtomicLong(System.currentTimeMillis());
+    private final AtomicBoolean movementCheck = new AtomicBoolean(false);
+
     public AtomicInput() {
 
     }
 
-    public boolean update(double forwards, double sideways) {
+    public void update(double forwards, double sideways) {
         final var time = System.currentTimeMillis();
         final var lastTime = lastUpdateTime.get();
-        if(lastTime + 100 > time) {
-            return false;
+        if(lastTime + 20 > time) { // do we need this?
+            return;
         }
 
         lastUpdateTime.set(time);
@@ -22,7 +25,15 @@ public class AtomicInput {
             lastInputs.poll();
         }
         lastInputs.offer(new Direction(forwards, sideways, time));
-        return movementCheck();
+        movementCheck.set(movementCheck());
+    }
+
+    public boolean canDodge() {
+        return movementCheck.get();
+    }
+
+    public void removeDodge() {
+        movementCheck.set(false);
     }
 
     public boolean movementCheck() {
@@ -50,8 +61,7 @@ public class AtomicInput {
         zAvg /= amount;
 
         var total = Math.abs(lastX - xAvg) + Math.abs(lastZ - zAvg);
-
-        return total > 0.8;
+        return total > 0.075;
     }
 
     private record Direction(double x, double z, long time) {};

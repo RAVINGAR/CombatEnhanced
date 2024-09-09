@@ -55,6 +55,9 @@ repositories {
 
     maven {
         url = 'https://mvn.lumine.io/repository/maven-public/'
+        content {
+            includeGroup 'io.lumine'
+        }
     }
 
     maven {
