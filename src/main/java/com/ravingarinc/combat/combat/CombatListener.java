@@ -1,8 +1,16 @@
 package com.ravingarinc.combat.combat;
 
+import com.comphenix.protocol.PacketType;
+import com.comphenix.protocol.ProtocolLibrary;
+import com.comphenix.protocol.events.ListenerOptions;
+import com.comphenix.protocol.events.ListenerPriority;
+import com.comphenix.protocol.events.PacketAdapter;
+import com.comphenix.protocol.events.PacketEvent;
 import com.ravingarinc.combat.CombatEnhanced;
 import com.ravingarinc.combat.api.ModuleListener;
+import com.ravingarinc.combat.character.CharacterManager;
 import com.ravingarinc.combat.compatibility.RPGHandler;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -10,15 +18,16 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
+import java.util.ArrayList;
 import java.util.UUID;
 
 public class CombatListener extends ModuleListener {
     private CombatManager manager;
+    private CharacterManager characters;
     private RPGHandler handler;
 
     public CombatListener(final CombatEnhanced plugin) {
@@ -28,16 +37,38 @@ public class CombatListener extends ModuleListener {
     @Override
     protected void load() {
         manager = plugin.getModule(CombatManager.class);
+        characters = plugin.getModule(CharacterManager.class);
         handler = plugin.getRPGHandler();
+
+        var protocol = ProtocolLibrary.getProtocolManager();
+        var packets = new ArrayList<PacketType>();
+        packets.add(PacketType.Play.Client.POSITION);
+        packets.add(PacketType.Play.Client.POSITION_LOOK);
+        protocol.addPacketListener(new PacketAdapter(plugin, ListenerPriority.MONITOR, packets, ListenerOptions.ASYNC) {
+            @Override
+            public void onPacketReceiving(PacketEvent event) {
+                if(event.isCancelled()) return;
+                var packet = event.getPacket();
+                onPlayerInput(event.getPlayer(),
+                        packet.getDoubles().read(0),
+                        packet.getDoubles().read(2));
+            }
+        });
 
         super.load();
     }
 
-    @EventHandler(ignoreCancelled = true)
-    public void onPlayerSwapHands(final PlayerSwapHandItemsEvent event) {
-        event.setCancelled(true);
+    private void onPlayerInput(Player player, double x, double z) {
+        final var character = characters.getPlayer(player);
+        final var input = character.getInput();
+        if(input.update(x, z)) {
+            Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+                tryDodge(player);
+            });
+        }
+    }
 
-        final Player player = event.getPlayer();
+    public void tryDodge(Player player) {
         final Vector velocity =  player.getVelocity();
         if (player.isBlocking() || player.isInsideVehicle() || velocity.getY() > 0) {
             return;

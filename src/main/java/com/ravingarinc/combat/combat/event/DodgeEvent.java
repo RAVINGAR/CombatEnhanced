@@ -119,7 +119,7 @@ public class DodgeEvent extends CombatEvent<CharacterEntity<?>> {
             movement.normalize();
             final double e0 = movement.getX() - direction.getX();
             final double e1 = movement.getZ() - direction.getZ();
-            if (e0 > -0.05 && e0 < 0.05 && e1 > -0.05 && e1 < 0.05) {
+            if (e0 > -0.1 && e0 < 0.1 && e1 > -0.1 && e1 < 0.1) {
                 // case -> Player is moving in the direction they are facing
                 //         we do not want a dodge
                 return null;

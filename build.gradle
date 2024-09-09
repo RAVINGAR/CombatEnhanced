@@ -77,7 +77,7 @@ dependencies {
 
     //implementation("com.github.RAVINGAR.RavinAPI:common:v1.4.3")
     //implementation("com.github.RAVINGAR.RavinAPI:module:v1.4.3")
-    implementation("com.github.RAVINGAR.RavinAPI:concurrent:v1.4.3")
+    implementation("com.github.RAVINGAR.RavinAPI:concurrent:1.5.4")
 
     compileOnly 'io.lumine:Mythic-Dist:5.5.0'
 

@@ -18,9 +18,13 @@ import java.util.function.Predicate;
 
 @ThreadSafe
 public class CharacterPlayer extends CharacterEntity<Player> {
-
+    private final AtomicInput input = new AtomicInput();
     protected CharacterPlayer(final CombatEnhanced plugin, final Player entity) {
         super(plugin, entity);
+    }
+
+    public AtomicInput getInput() {
+        return input;
     }
 
     @Override
