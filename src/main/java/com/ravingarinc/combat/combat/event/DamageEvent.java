@@ -2,14 +2,13 @@ package com.ravingarinc.combat.combat.event;
 
 import com.ravingarinc.combat.api.AsynchronousException;
 import com.ravingarinc.combat.character.CharacterEntity;
-import com.ravingarinc.combat.file.Settings;
 
 import java.util.Objects;
 
 public class DamageEvent extends CombatEvent<CharacterEntity<?>> {
     private final double damage;
-    public DamageEvent(CharacterEntity<?> entity, double damage, long startTime, Settings settings) {
-        super(entity, startTime, settings.poiseWindow);
+    public DamageEvent(CharacterEntity<?> entity, double damage, long startTime, long poiseWindow) {
+        super(entity, startTime, poiseWindow);
         this.damage = damage;
     }
 

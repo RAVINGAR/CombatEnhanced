@@ -2,17 +2,15 @@ package com.ravingarinc.combat.combat.runner;
 
 import com.herocraftonline.heroes.api.events.HeroesDamageEvent;
 import com.herocraftonline.heroes.characters.CharacterTemplate;
-import com.ravingarinc.combat.CombatEnhanced;
+import com.ravingarinc.api.module.RavinPlugin;
 import com.ravingarinc.combat.api.BukkitApi;
 import com.ravingarinc.combat.character.CharacterManager;
 import com.ravingarinc.combat.combat.event.DamageEvent;
-import com.ravingarinc.combat.compatibility.kalentire.KalentireHandler;
+import com.ravingarinc.combat.compatibility.kalentire.KalentireWrapper;
 import com.ravingarinc.combat.compatibility.kalentire.effect.PoiseImmunityEffect;
 import com.ravingarinc.combat.compatibility.kalentire.effect.PoiseStunEffect;
-import com.ravingarinc.combat.file.Settings;
-import net.kyori.adventure.text.Component;
+import com.ravingarinc.combat.file.Properties;
 import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 
@@ -21,24 +19,23 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
 
 public class PoiseRunner extends BukkitRunnable {
-    private final CombatEnhanced plugin;
+    private final RavinPlugin plugin;
 
-    private final KalentireHandler handler;
+    private final KalentireWrapper handler;
     private final CharacterManager characterManager;
-    private final Settings settings;
+    private final Properties settings;
 
     private final List<DamageEvent> toRemove = new LinkedList<>();
 
     private final ConcurrentHashMap<UUID, Collection<DamageEvent>> mappedEvents;
 
-    public PoiseRunner(CombatEnhanced plugin, KalentireHandler handler) {
+    public PoiseRunner(RavinPlugin plugin, KalentireWrapper handler) {
         this.plugin = plugin;
         this.handler = handler;
         this.characterManager = plugin.getModule(CharacterManager.class);
-        this.settings = plugin.getRPGHandler().getSettings();
+        this.settings = plugin.getModule(Properties.class);
         this.mappedEvents = new ConcurrentHashMap<>(512);
     }
 
@@ -68,10 +65,8 @@ public class PoiseRunner extends BukkitRunnable {
         }
         final var entity = opt.get();
         final var set = mappedEvents.computeIfAbsent(character.getUUID(), u -> ConcurrentHashMap.newKeySet());
-        final var impact = KalentireHandler.getImpact(event.getAttacker().getEntity());
-        final var totalDamage = damage + impact;
-        CombatEnhanced.log(Level.WARNING, "Debug -> Dealt damage of " + totalDamage);
-        set.add(new DamageEvent(entity, damage + impact, System.currentTimeMillis(), settings));
+        final var impact = KalentireWrapper.getImpact(event.getAttacker().getEntity());
+        set.add(new DamageEvent(entity, damage + impact, System.currentTimeMillis(), settings.poiseWindow));
         if(character.hasEffect(PoiseImmunityEffect.EFFECT_NAME)) {
             return;
         }
@@ -81,15 +76,16 @@ public class PoiseRunner extends BukkitRunnable {
                 poiseDamage += (damageEvent.getDamage() * damageEvent.getTimeFactor());
                 // the time factor basically decreases the value of the damage based on how close it is to expiry!
             }
-            // TODO Handle poise buffer with shields
-            if(event.getDefender().getEntity() instanceof Player p) {
-                p.sendMessage(Component.text(">> Poise Damage -> " + poiseDamage));
-            }
             final var damageOverPoise = poiseDamage - (handler.getPoise(entity.getEntity()));
             if(damageOverPoise <= 0) {
                 return; // Still below poise
             }
-            Bukkit.getScheduler().runTask(plugin, () -> character.addEffect(new PoiseStunEffect(event.getAttacker().getEntity(), Math.min(settings.minStunDuration + (int)(damageOverPoise / settings.stunThreshold) * settings.stunDurationPerThreshold, settings.maxStunDuration), settings.stunCooldown, damageOverPoise * settings.vulnerabilityPerPoise)));
+            final var effect = new PoiseStunEffect(
+                    event.getAttacker().getEntity(),
+                    Math.min(settings.minStunDuration + (int)(damageOverPoise / settings.stunThreshold) * settings.stunDurationPerThreshold, settings.maxStunDuration),
+                    settings.stunCooldown,
+                    damageOverPoise * settings.vulnerabilityPerPoise);
+            Bukkit.getScheduler().runTask(plugin, () -> character.addEffect(effect));
         });
     }
 

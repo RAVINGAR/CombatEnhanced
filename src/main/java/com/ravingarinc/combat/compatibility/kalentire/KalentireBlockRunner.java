@@ -2,16 +2,14 @@ package com.ravingarinc.combat.compatibility.kalentire;
 
 import com.herocraftonline.heroes.Heroes;
 import com.herocraftonline.heroes.characters.CharacterManager;
-import com.ravingarinc.combat.CombatEnhanced;
 import com.ravingarinc.combat.combat.event.PlayerBlockEvent;
 import com.ravingarinc.combat.combat.runner.BlockRunner;
+import com.ravingarinc.combat.compatibility.RPGWrapper;
 import com.ravingarinc.combat.compatibility.kalentire.effect.PoiseStunEffect;
-import com.ravingarinc.combat.file.Settings;
 import com.ravingarinc.kalentirerpg.damage.type.DamageType;
 import io.lumine.mythic.lib.MythicLib;
 import io.lumine.mythic.lib.api.player.MMOPlayerData;
 import org.bukkit.ChatColor;
-import org.bukkit.EntityEffect;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.AbstractArrow;
@@ -19,16 +17,17 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 
+
 public class KalentireBlockRunner extends BlockRunner {
     private CharacterManager manager = Heroes.getInstance().getCharacterManager();
-    public KalentireBlockRunner(Settings settings, CombatEnhanced plugin) {
-        super(settings, plugin);
+    public KalentireBlockRunner(RPGWrapper handler) {
+        super(handler);
     }
 
     @Override
     public boolean handleWithEvent(PlayerBlockEvent blockEvent, EntityDamageByEntityEvent event) {
         final Player defender = (Player) event.getEntity();
-        if (defender.isBlocking() && settings.blockDamageCauses.contains(event.getCause())) {
+        if (defender.isBlocking() && properties.blockDamageCauses.contains(event.getCause())) {
             final int requiredStamina = getRequiredStamina(defender, event) / 2;
             if (handler.tryRemoveStamina(defender, requiredStamina)) {
                 defender.sendMessage(ChatColor.RED + "You blocked the attack!");
@@ -36,20 +35,20 @@ public class KalentireBlockRunner extends BlockRunner {
                 defender.getWorld().playSound(defender, Sound.ITEM_SHIELD_BLOCK, 1.0F, 1.0F);
 
                 if (event.getDamager() instanceof LivingEntity livingAttacker) {
-                    throwEntity(defender, livingAttacker, settings.blockThrowStrength);
-                    livingAttacker.playEffect(EntityEffect.HURT);
+                    throwEntity(defender, livingAttacker, properties.blockThrowStrength);
+                    livingAttacker.playHurtAnimation(0F);
                 } else if (event.getDamager() instanceof AbstractArrow arrow) {
                     defender.launchProjectile(arrow.getClass(), arrow.getVelocity().multiply(-0.5)).setDamage(arrow.getDamage() * 0.5);
                     arrow.remove();
                 }
-                handlePostEvent(event, defender, KalentireHandler.getPerfectBlockBonus(defender));
+                handlePostEvent(event, defender, KalentireWrapper.getPerfectBlockBonus(defender));
             } else {
-                throwEntity(event.getDamager(), defender, settings.blockThrowStrength);
+                throwEntity(event.getDamager(), defender, properties.blockThrowStrength);
                 defender.playHurtAnimation(0);
                 handlePostEvent(event, defender, 1.0);
                 final var hero = manager.getHero(defender);
                 final var ticks = requiredStamina - hero.getStamina();
-                hero.addEffect(new PoiseStunEffect(event.getDamager(), ticks * 50L, settings.stunCooldown, 0.0));
+                hero.addEffect(new PoiseStunEffect(event.getDamager(), ticks * 50L, properties.stunCooldown, 0.0));
             }
             return true;
         }
@@ -59,14 +58,14 @@ public class KalentireBlockRunner extends BlockRunner {
     private int getRequiredStamina(Player defender, EntityDamageByEntityEvent event) {
         final var data = MMOPlayerData.get(defender.getUniqueId()).getStatMap();
         final var damager = event.getDamager();
-        final var impact = damager instanceof LivingEntity livingEntity ? ((KalentireHandler)handler).getImpact(livingEntity) : 0.0;
+        final var impact = damager instanceof LivingEntity livingEntity ? KalentireWrapper.getImpact(livingEntity) : 0.0;
         return (int) Math.floor(event.getDamage() + impact / data.getStat("STAMINA_POISE_DAMAGE"));
     }
 
     @Override
     public boolean handleWithoutEvent(EntityDamageByEntityEvent event) {
         if (event.getEntity() instanceof Player defender) {
-            if (defender.isBlocking() && settings.blockDamageCauses.contains(event.getCause())) {
+            if (defender.isBlocking() && properties.blockDamageCauses.contains(event.getCause())) {
                 final int requiredStamina = getRequiredStamina(defender, event);
                 if (handler.tryRemoveStamina(defender, requiredStamina)) {
                     defender.getWorld().playSound(defender, Sound.ITEM_SHIELD_BLOCK, 1.0F, 1.0F);
@@ -75,7 +74,7 @@ public class KalentireBlockRunner extends BlockRunner {
                     defender.playSound(defender, Sound.ITEM_SHIELD_BREAK, 1.0F, 1.0F);
                     defender.setCooldown(Material.SHIELD, (int) handler.getShieldCooldown(defender));
                 }
-                throwEntity(event.getDamager(), defender, settings.blockThrowStrength);
+                throwEntity(event.getDamager(), defender, properties.blockThrowStrength);
                 return true;
             }
         }

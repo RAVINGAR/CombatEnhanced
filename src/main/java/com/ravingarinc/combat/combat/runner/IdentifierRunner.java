@@ -2,7 +2,7 @@ package com.ravingarinc.combat.combat.runner;
 
 import com.ravingarinc.combat.api.BukkitApi;
 import com.ravingarinc.combat.combat.event.CombatEvent;
-import com.ravingarinc.combat.file.Settings;
+import com.ravingarinc.combat.file.Properties;
 import org.bukkit.event.Event;
 import org.jetbrains.annotations.NotNull;
 
@@ -11,17 +11,17 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class IdentifierRunner<T extends CombatEvent<?>, E extends Event> extends EventRunner<T, E> {
-    protected final Settings settings;
+    protected final Properties properties;
     private final ConcurrentHashMap<UUID, T> events;
 
-    public IdentifierRunner(final Settings settings) {
-        this(new ConcurrentHashMap<>(512), settings);
+    public IdentifierRunner(final Properties properties) {
+        this(new ConcurrentHashMap<>(512), properties);
     }
 
-    private IdentifierRunner(final ConcurrentHashMap<UUID, T> events, final Settings settings) {
+    private IdentifierRunner(final ConcurrentHashMap<UUID, T> events, final Properties properties) {
         super(events.values());
         this.events = events;
-        this.settings = settings;
+        this.properties = properties;
     }
 
     /**

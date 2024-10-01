@@ -4,18 +4,18 @@ import com.herocraftonline.heroes.Heroes;
 import com.herocraftonline.heroes.api.events.HeroesDamageEvent;
 import com.herocraftonline.heroes.api.events.ProjectileDamageEvent;
 import com.herocraftonline.heroes.api.events.WeaponDamageEvent;
+import com.herocraftonline.heroes.attributes.AttributeType;
 import com.herocraftonline.heroes.characters.CharacterManager;
 import com.herocraftonline.heroes.characters.Hero;
-import com.ravingarinc.combat.CombatEnhanced;
-import com.ravingarinc.combat.combat.CombatManager;
+import com.ravingarinc.api.module.RavinPlugin;
+import com.ravingarinc.combat.combat.runner.BlockRunner;
 import com.ravingarinc.combat.combat.runner.PoiseRunner;
-import com.ravingarinc.combat.compatibility.RPGHandler;
+import com.ravingarinc.combat.compatibility.RPGWrapper;
 import com.ravingarinc.combat.compatibility.kalentire.effect.PoiseStunEffect;
-import com.ravingarinc.combat.file.Settings;
+import com.ravingarinc.combat.file.Properties;
 import io.lumine.mythic.bukkit.MythicBukkit;
 import io.lumine.mythic.lib.MythicLib;
 import io.lumine.mythic.lib.api.player.MMOPlayerData;
-import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
@@ -26,11 +26,11 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
-public class KalentireHandler implements RPGHandler, Listener {
-    private final CombatEnhanced plugin;
+public class KalentireWrapper implements RPGWrapper, Listener {
+    private final RavinPlugin plugin;
     private CharacterManager manager = null;
 
-    private final Settings settings;
+    private final Properties settings;
 
     private PoiseRunner poiseRunner;
 
@@ -47,12 +47,11 @@ public class KalentireHandler implements RPGHandler, Listener {
 
     public static final String PERFECT_BLOCK_BONUS = "PERFECT_BLOCK_BONUS";
 
+    public static final String BLOCK_BUFFER = "BLOCK_BUFFER";
 
-
-
-    public KalentireHandler(final CombatEnhanced plugin) {
+    public KalentireWrapper(final RavinPlugin plugin) {
         this.plugin = plugin;
-        this.settings = plugin.getModule(CombatManager.class).getSettings();
+        this.settings = plugin.getModule(Properties.class);
         // TODO Dodge Values should be based on player movement
     }
 
@@ -104,9 +103,8 @@ public class KalentireHandler implements RPGHandler, Listener {
 
     @Override
     public float getDodgeStrength(final Player player) {
-        final var speed = (float)player.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).getValue();
         //CombatEnhanced.log(Level.WARNING, "Debug -> Player's Speed is " + speed);
-        return Math.min(1.0F, (0.9F - (0.13F - speed))); // TODO Figure out this formula
+        return settings.dodgeStrength + (getManager().getHero(player).getAttributeValue(AttributeType.DEXTERITY) * settings.dodgeStrength / 10F);
     }
 
     @Override
@@ -116,7 +114,7 @@ public class KalentireHandler implements RPGHandler, Listener {
 
     @Override
     public int getDodgeCost(Player player) {
-        return getSettings().dodgeStaminaCost;
+        return this.getProperties().dodgeStaminaCost;
     }
     // We dont need to consider the drain here, since heroes should do it automagically!
 
@@ -131,7 +129,7 @@ public class KalentireHandler implements RPGHandler, Listener {
     }
 
     @Override
-    public Settings getSettings() {
+    public Properties getProperties() {
         return settings;
     }
 
@@ -147,7 +145,12 @@ public class KalentireHandler implements RPGHandler, Listener {
     private double getPoiseForPlayer(Player player) {
         final var data = MMOPlayerData.getOrNull(player.getUniqueId());
         if(data == null) return 0.0;
-        return data.getStatMap().getStat(POISE);
+        final var stats = data.getStatMap();
+        var basePoise = stats.getStat(POISE);
+        if(player.isBlocking()) {
+            basePoise += stats.getStat(BLOCK_BUFFER);
+        }
+        return basePoise;
     }
 
     private double getPoiseForMonster(Monster monster) {
@@ -168,7 +171,7 @@ public class KalentireHandler implements RPGHandler, Listener {
     }
 
     private static double getImpactForPlayer(Player player) {
-        return MMOPlayerData.get(player.getUniqueId()).getStatMap().getStat(KalentireHandler.IMPACT);
+        return MMOPlayerData.get(player.getUniqueId()).getStatMap().getStat(KalentireWrapper.IMPACT);
     }
 
     private static double getImpactForMonster(Monster monster) {
@@ -198,4 +201,8 @@ public class KalentireHandler implements RPGHandler, Listener {
         poiseRunner.removeAll(event.getPlayer().getUniqueId());
     }
 
+    @Override
+    public BlockRunner getBlockRunner() {
+        return new KalentireBlockRunner(this);
+    }
 }

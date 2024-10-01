@@ -1,7 +1,8 @@
 package com.ravingarinc.combat.character;
 
-import com.ravingarinc.combat.CombatEnhanced;
-import com.ravingarinc.combat.api.ModuleListener;
+import com.ravingarinc.api.module.ModuleListener;
+import com.ravingarinc.api.module.ModuleLoadException;
+import com.ravingarinc.api.module.RavinPlugin;
 import com.ravingarinc.combat.combat.CombatManager;
 import org.bukkit.entity.Monster;
 import org.bukkit.event.EventHandler;
@@ -13,14 +14,15 @@ public class CharacterListener extends ModuleListener {
     private CharacterManager characterManager;
     private CombatManager combatManager;
 
-    public CharacterListener(final CombatEnhanced plugin) {
+    public CharacterListener(final RavinPlugin plugin) {
         super(CharacterListener.class, plugin, CharacterManager.class, CombatManager.class);
     }
 
     @Override
-    protected void load() {
+    public void load() throws ModuleLoadException {
         characterManager = plugin.getModule(CharacterManager.class);
         combatManager = plugin.getModule(CombatManager.class);
+
         super.load();
     }
 

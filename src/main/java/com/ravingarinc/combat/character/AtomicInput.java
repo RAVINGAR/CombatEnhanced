@@ -61,7 +61,7 @@ public class AtomicInput {
         zAvg /= amount;
 
         var total = Math.abs(lastX - xAvg) + Math.abs(lastZ - zAvg);
-        return total > 0.075;
+        return total > 0.01;
     }
 
     private record Direction(double x, double z, long time) {};

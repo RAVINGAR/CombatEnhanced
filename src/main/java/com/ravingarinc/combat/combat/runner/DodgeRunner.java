@@ -1,7 +1,7 @@
 package com.ravingarinc.combat.combat.runner;
 
 import com.ravingarinc.combat.combat.event.DodgeEvent;
-import com.ravingarinc.combat.file.Settings;
+import com.ravingarinc.combat.file.Properties;
 import io.lumine.mythic.lib.MythicLib;
 import io.lumine.mythic.lib.damage.DamageType;
 import org.bukkit.ChatColor;
@@ -14,7 +14,7 @@ public class DodgeRunner extends IdentifierRunner<DodgeEvent, EntityDamageByEnti
 
 
 
-    public DodgeRunner(final Settings settings) {
+    public DodgeRunner(final Properties settings) {
         super(settings);
     }
 
@@ -22,13 +22,13 @@ public class DodgeRunner extends IdentifierRunner<DodgeEvent, EntityDamageByEnti
     public boolean handleWithEvent(final DodgeEvent dodgeEvent, final EntityDamageByEntityEvent event) {
         // We can assume that event.getEntity is a LivingEntity since the UUID must belong to one
         final LivingEntity entity = (LivingEntity) event.getEntity();
-        if (settings.dodgeDamageCauses.contains(event.getCause())) {
+        if (properties.dodgeDamageCauses.contains(event.getCause())) {
             if (entity instanceof Player player) {
                 entity.sendMessage(ChatColor.RED + "< You dodged the attack! >");
                 player.playSound(player, Sound.ENTITY_ARROW_HIT_PLAYER, 1.0F, 1.0F);
             }
             final var meta = MythicLib.inst().getDamage().findAttack(event).getDamage();
-            final var mitigation = 1.0 - settings.dodgeMitigation;
+            final var mitigation = 1.0 - properties.dodgeMitigation;
             meta.multiplicativeModifier(mitigation, DamageType.PHYSICAL);
             meta.multiplicativeModifier(mitigation, DamageType.MAGIC);
             meta.multiplicativeModifier(mitigation, DamageType.PROJECTILE);

@@ -1,18 +1,17 @@
 package com.ravingarinc.combat.combat;
 
+import com.ravingarinc.api.module.Module;
+import com.ravingarinc.api.module.RavinPlugin;
 import com.ravingarinc.combat.CombatEnhanced;
 import com.ravingarinc.combat.api.BukkitApi;
-import com.ravingarinc.combat.api.Module;
 import com.ravingarinc.combat.api.Vector3;
 import com.ravingarinc.combat.character.CharacterManager;
 import com.ravingarinc.combat.combat.event.DodgeEvent;
 import com.ravingarinc.combat.combat.event.PlayerBlockEvent;
-import com.ravingarinc.combat.combat.runner.BlockRunner;
 import com.ravingarinc.combat.combat.runner.DodgeRunner;
 import com.ravingarinc.combat.combat.runner.IdentifierRunner;
-import com.ravingarinc.combat.compatibility.RPGHandler;
-import com.ravingarinc.combat.file.ConfigManager;
-import com.ravingarinc.combat.file.Settings;
+import com.ravingarinc.combat.compatibility.RPGWrapper;
+import com.ravingarinc.combat.file.Properties;
 import org.bukkit.Material;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.LivingEntity;
@@ -34,7 +33,6 @@ import java.util.UUID;
 public class CombatManager extends Module {
     private static final long PERIOD = 2L;
     private final BlockData defaultData;
-    private final Settings settings;
     private final BukkitScheduler scheduler;
     private final Map<UUID, Long> lastBlocks;
     private final Map<UUID, Long> lastDodges;
@@ -42,11 +40,11 @@ public class CombatManager extends Module {
     private IdentifierRunner<PlayerBlockEvent, EntityDamageByEntityEvent> blockRunner;
     private IdentifierRunner<DodgeEvent, EntityDamageByEntityEvent> dodgeRunner;
 
-    private RPGHandler handler;
+    private RPGWrapper handler;
+    private Properties properties;
 
-    public CombatManager(final CombatEnhanced plugin) {
-        super(CombatManager.class, plugin, ConfigManager.class, CharacterManager.class);
-        this.settings = new Settings();
+    public CombatManager(final RavinPlugin plugin) {
+        super(CombatManager.class, plugin, Properties.class, CharacterManager.class);
         this.scheduler = plugin.getServer().getScheduler();
 
         this.lastDodges = new HashMap<>();
@@ -57,7 +55,7 @@ public class CombatManager extends Module {
     public boolean justBlocked(final UUID uuid) {
         final Long last = lastBlocks.get(uuid);
         if (last != null) {
-            return System.currentTimeMillis() < last + settings.globalCooldown;
+            return System.currentTimeMillis() < last + properties.globalCooldown;
         }
         return false;
     }
@@ -65,7 +63,7 @@ public class CombatManager extends Module {
     public boolean justDodged(final UUID uuid) {
         final Long last = lastDodges.get(uuid);
         if (last != null) {
-            return System.currentTimeMillis() < last + settings.globalCooldown;
+            return System.currentTimeMillis() < last + properties.globalCooldown;
         }
         return false;
     }
@@ -88,7 +86,7 @@ public class CombatManager extends Module {
     public void queueBlockEvent(@NotNull final Player entity) {
         final long time = System.currentTimeMillis();
         lastBlocks.put(entity.getUniqueId(), time);
-        scheduler.runTaskAsynchronously(plugin, () -> blockRunner.add(new PlayerBlockEvent(characterManager.getPlayer(entity), time, settings)));
+        scheduler.runTaskAsynchronously(plugin, () -> blockRunner.add(new PlayerBlockEvent(characterManager.getPlayer(entity), time, properties)));
     }
 
     public void queueDodgeEvent(@NotNull final LivingEntity entity) {
@@ -97,7 +95,7 @@ public class CombatManager extends Module {
         final Vector3 location = new Vector3(entity.getLocation());
         scheduler.runTaskAsynchronously(plugin, () ->
                 characterManager.getCharacter(entity).ifPresent(character ->
-                        dodgeRunner.add(new DodgeEvent(character, location, start, settings, handler, defaultData))));
+                        dodgeRunner.add(new DodgeEvent(character, location, start, properties, handler, defaultData))));
     }
 
     @BukkitApi
@@ -120,32 +118,22 @@ public class CombatManager extends Module {
         }, 6L);
     }
 
-
     @Override
-    protected void reload() {
-        dodgeRunner.cancel();
-        blockRunner.cancel();
-    }
-
-    @Override
-    protected void load() {
-        handler = plugin.getRPGHandler();
+    public void load() {
+        properties = plugin.getModule(Properties.class);
+        handler = ((CombatEnhanced)plugin).getRPGHandler();
         characterManager = plugin.getModule(CharacterManager.class);
-        dodgeRunner = new DodgeRunner(settings);
-        blockRunner = new BlockRunner(settings, plugin);
+        dodgeRunner = new DodgeRunner(properties);
+        blockRunner = handler.getBlockRunner();
 
         dodgeRunner.runTaskTimerAsynchronously(plugin, 5, PERIOD);
         blockRunner.runTaskTimerAsynchronously(plugin, 5, PERIOD);
     }
 
     @Override
-    protected void shutdown() {
+    public void cancel() {
         dodgeRunner.cancel();
         blockRunner.cancel();
-    }
-
-    public Settings getSettings() {
-        return settings;
     }
 
 }

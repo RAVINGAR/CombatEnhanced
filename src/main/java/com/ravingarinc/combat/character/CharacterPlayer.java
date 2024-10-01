@@ -1,5 +1,6 @@
 package com.ravingarinc.combat.character;
 
+import com.ravingarinc.api.module.RavinPlugin;
 import com.ravingarinc.combat.CombatEnhanced;
 import com.ravingarinc.combat.api.AsyncHandler;
 import com.ravingarinc.combat.api.AsynchronousException;
@@ -19,7 +20,7 @@ import java.util.function.Predicate;
 @ThreadSafe
 public class CharacterPlayer extends CharacterEntity<Player> {
     private final AtomicInput input = new AtomicInput();
-    protected CharacterPlayer(final CombatEnhanced plugin, final Player entity) {
+    protected CharacterPlayer(final RavinPlugin plugin, final Player entity) {
         super(plugin, entity);
     }
 

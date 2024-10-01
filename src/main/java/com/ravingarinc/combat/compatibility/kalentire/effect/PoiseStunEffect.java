@@ -11,8 +11,8 @@ import com.herocraftonline.heroes.characters.Monster;
 import com.herocraftonline.heroes.characters.effects.Effect;
 import com.herocraftonline.heroes.characters.effects.EffectType;
 import com.herocraftonline.heroes.characters.effects.PeriodicExpirableEffect;
-import com.ravingarinc.combat.CombatEnhanced;
-import com.ravingarinc.combat.file.Settings;
+import com.ravingarinc.api.module.RavinPlugin;
+import com.ravingarinc.combat.file.Properties;
 import org.bukkit.*;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
@@ -28,8 +28,8 @@ public class PoiseStunEffect extends PeriodicExpirableEffect {
 
     public static Listener LISTENER = null;
 
-    public static void register(CombatEnhanced plugin) {
-        LISTENER = new Listener(plugin.getRPGHandler().getSettings());
+    public static void register(RavinPlugin plugin) {
+        LISTENER = new Listener(plugin.getModule(Properties.class));
         plugin.getServer().getPluginManager().registerEvents(LISTENER, plugin);
     }
 
@@ -105,8 +105,8 @@ public class PoiseStunEffect extends PeriodicExpirableEffect {
 
     public static class Listener implements org.bukkit.event.Listener {
         private final CharacterManager characterManager = Heroes.getInstance().getCharacterManager();
-        private final Settings settings;
-        private Listener(Settings settings) {
+        private final Properties settings;
+        private Listener(Properties settings) {
             this.settings = settings;
         }
 

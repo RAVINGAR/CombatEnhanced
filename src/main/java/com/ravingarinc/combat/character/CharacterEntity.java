@@ -1,6 +1,6 @@
 package com.ravingarinc.combat.character;
 
-import com.ravingarinc.combat.CombatEnhanced;
+import com.ravingarinc.api.module.RavinPlugin;
 import com.ravingarinc.combat.api.AsyncHandler;
 import com.ravingarinc.combat.api.AsynchronousException;
 import com.ravingarinc.combat.api.Vector3;
@@ -22,7 +22,7 @@ public abstract class CharacterEntity<T extends LivingEntity> {
     protected final UUID uuid;
     protected final CharacterManager characterManager;
 
-    protected CharacterEntity(final CombatEnhanced plugin, final T entity) {
+    protected CharacterEntity(final RavinPlugin plugin, final T entity) {
         this.entity = entity;
         this.characterManager = plugin.getModule(CharacterManager.class);
         this.uuid = entity.getUniqueId();

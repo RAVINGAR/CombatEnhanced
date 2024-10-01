@@ -1,7 +1,8 @@
 package com.ravingarinc.combat.character;
 
+import com.ravingarinc.api.module.Module;
+import com.ravingarinc.api.module.RavinPlugin;
 import com.ravingarinc.combat.CombatEnhanced;
-import com.ravingarinc.combat.api.Module;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Monster;
@@ -22,7 +23,7 @@ public class CharacterManager extends Module {
     private final BukkitScheduler scheduler;
     private EntityReaper reaper;
 
-    public CharacterManager(final CombatEnhanced plugin) {
+    public CharacterManager(final RavinPlugin plugin) {
         super(CharacterManager.class, plugin);
         this.playerMap = new ConcurrentHashMap<>();
         this.monsterMap = new ConcurrentHashMap<>();
@@ -41,7 +42,7 @@ public class CharacterManager extends Module {
         final UUID uuid = entity.getUniqueId();
         CharacterPlayer player = playerMap.get(uuid);
         if (player == null) {
-            player = new CharacterPlayer(plugin, entity);
+            player = new CharacterPlayer((CombatEnhanced) plugin, entity);
             playerMap.put(uuid, player);
         }
         return player;
@@ -75,7 +76,7 @@ public class CharacterManager extends Module {
         final UUID uuid = entity.getUniqueId();
         CharacterMonster monster = monsterMap.get(uuid);
         if (monster == null) {
-            monster = new CharacterMonster(plugin, entity);
+            monster = new CharacterMonster((CombatEnhanced) plugin, entity);
             monsterMap.put(uuid, monster);
         }
         return monster;
@@ -100,7 +101,7 @@ public class CharacterManager extends Module {
     }
 
     @Override
-    protected void reload() {
+    public void cancel() {
         reaper.cancel();
 
         final List<LivingEntity> loadedEntities = new ArrayList<>();
@@ -122,14 +123,9 @@ public class CharacterManager extends Module {
     }
 
     @Override
-    protected void load() {
+    public void load() {
         reaper = new EntityReaper();
         reaper.runTaskTimer(plugin, 20L, 100L);
-    }
-
-    @Override
-    protected void shutdown() {
-
     }
 
     public void queueForRemoval(final LivingEntity entity) {

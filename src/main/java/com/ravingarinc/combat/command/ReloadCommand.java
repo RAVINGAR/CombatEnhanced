@@ -1,15 +1,17 @@
 package com.ravingarinc.combat.command;
 
+import com.ravingarinc.api.command.BaseCommand;
+import com.ravingarinc.api.module.RavinPlugin;
 import com.ravingarinc.combat.CombatEnhanced;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
-import org.bukkit.command.CommandSender;
-import org.jetbrains.annotations.NotNull;
 
-public class ReloadCommand implements CommandExecutor {
-    @Override
-    public boolean onCommand(@NotNull final CommandSender sender, @NotNull final Command command, @NotNull final String label, @NotNull final String[] args) {
-        CombatEnhanced.getInstance().reload();
-        return true;
+public class ReloadCommand extends BaseCommand {
+    public ReloadCommand(RavinPlugin plugin) {
+        super(plugin, "combatreload", "combat.enhanced");
+
+        setFunction((sender, args) -> {
+            CombatEnhanced.getInstance().reload();
+            sender.sendMessage("Plugin has been reloaded!");
+            return true;
+        });
     }
 }

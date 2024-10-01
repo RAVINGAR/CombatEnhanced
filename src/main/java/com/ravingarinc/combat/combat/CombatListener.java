@@ -1,15 +1,11 @@
 package com.ravingarinc.combat.combat;
 
-import com.comphenix.protocol.PacketType;
-import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.events.ListenerOptions;
-import com.comphenix.protocol.events.ListenerPriority;
-import com.comphenix.protocol.events.PacketAdapter;
-import com.comphenix.protocol.events.PacketEvent;
+import com.ravingarinc.api.module.ModuleListener;
+import com.ravingarinc.api.module.ModuleLoadException;
+import com.ravingarinc.api.module.RavinPlugin;
 import com.ravingarinc.combat.CombatEnhanced;
-import com.ravingarinc.combat.api.ModuleListener;
 import com.ravingarinc.combat.character.CharacterManager;
-import com.ravingarinc.combat.compatibility.RPGHandler;
+import com.ravingarinc.combat.compatibility.RPGWrapper;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
@@ -24,7 +20,6 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,42 +27,21 @@ import java.util.concurrent.ConcurrentHashMap;
 public class CombatListener extends ModuleListener {
     private CombatManager manager;
     private CharacterManager characters;
-    private RPGHandler handler;
+    private RPGWrapper handler;
 
     private Map<UUID, Long> lastSneaking = new ConcurrentHashMap<>();
 
-    public CombatListener(final CombatEnhanced plugin) {
+    public CombatListener(final RavinPlugin plugin) {
         super(CombatListener.class, plugin, CombatManager.class);
     }
 
     @Override
-    protected void load() {
+    public void load() throws ModuleLoadException {
         manager = plugin.getModule(CombatManager.class);
         characters = plugin.getModule(CharacterManager.class);
-        handler = plugin.getRPGHandler();
-
-        var protocol = ProtocolLibrary.getProtocolManager();
-        var packets = new ArrayList<PacketType>();
-        packets.add(PacketType.Play.Client.POSITION);
-        packets.add(PacketType.Play.Client.POSITION_LOOK);
-        protocol.addPacketListener(new PacketAdapter(plugin, ListenerPriority.MONITOR, packets, ListenerOptions.ASYNC) {
-            @Override
-            public void onPacketReceiving(PacketEvent event) {
-                if(event.isCancelled()) return;
-                var packet = event.getPacket();
-                onPlayerInput(event.getPlayer(),
-                        packet.getDoubles().read(0),
-                        packet.getDoubles().read(2));
-            }
-        });
+        handler = ((CombatEnhanced)plugin).getRPGHandler();
 
         super.load();
-    }
-
-    private void onPlayerInput(Player player, double x, double z) {
-        final var character = characters.getPlayer(player);
-        final var input = character.getInput();
-        input.update(x, z);
     }
 
     public void tryDodge(Player player) {
@@ -86,7 +60,7 @@ public class CombatListener extends ModuleListener {
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerSneakEvent(final PlayerToggleSneakEvent event) {
         final Player player = event.getPlayer();
         if(player.getGameMode() == GameMode.CREATIVE) return;
@@ -97,11 +71,7 @@ public class CombatListener extends ModuleListener {
             if(lastTime == null || lastTime + 2000 < currentTime) {
                 lastSneaking.put(uuid, currentTime);
                 Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
-                    final var input = characters.getPlayer(player).getInput();
-                    if(input.canDodge()) {
-                        input.removeDodge();
-                        tryDodge(player);
-                    }
+                    tryDodge(player);
                 });
             }
         } else {

@@ -5,8 +5,8 @@ import com.ravingarinc.combat.api.AsynchronousException;
 import com.ravingarinc.combat.api.Vector3;
 import com.ravingarinc.combat.character.CharacterEntity;
 import com.ravingarinc.combat.character.CharacterPlayer;
-import com.ravingarinc.combat.compatibility.RPGHandler;
-import com.ravingarinc.combat.file.Settings;
+import com.ravingarinc.combat.compatibility.RPGWrapper;
+import com.ravingarinc.combat.file.Properties;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class DodgeEvent extends CombatEvent<CharacterEntity<?>> {
 
-    protected final Settings settings;
+    protected final Properties properties;
 
     protected final long warmup;
 
@@ -36,19 +36,19 @@ public class DodgeEvent extends CombatEvent<CharacterEntity<?>> {
     protected Vector3 initialVelocity;
     protected Vector3 location;
 
-    protected RPGHandler handler;
+    protected RPGWrapper handler;
 
     public DodgeEvent(@NotNull final CharacterEntity<?> entity,
                       final Vector3 location,
                       final long start,
-                      final Settings settings, final RPGHandler handler, final BlockData data) {
-        super(entity, start, settings.dodgeWarmup + (entity instanceof CharacterPlayer cP ? handler.getDodgeDuration(cP.getEntity()) : settings.dodgeDuration));
+                      final Properties properties, final RPGWrapper handler, final BlockData data) {
+        super(entity, start, properties.dodgeWarmup + (entity instanceof CharacterPlayer cP ? handler.getDodgeDuration(cP.getEntity()) : properties.dodgeDuration));
         this.initialVelocity = new Vector3();
-        this.settings = settings;
-        this.warmup = start + settings.dodgeWarmup;
+        this.properties = properties;
+        this.warmup = start + properties.dodgeWarmup;
         this.location = location;
         this.handler = handler;
-        this.particleCount = settings.dodgeParticleCount;
+        this.particleCount = properties.dodgeParticleCount;
         this.dodging = new AtomicBoolean(false);
         this.defaultData = data;
     }
@@ -99,10 +99,11 @@ public class DodgeEvent extends CombatEvent<CharacterEntity<?>> {
         final Vector3 postLoc = entity.getLocation();
         final double d0 = postLoc.getX() - location.getX();
         final double d1 = postLoc.getZ() - location.getZ();
-        final float strength = settings.dodgeStrength * (entity instanceof CharacterPlayer player ? handler.getDodgeStrength(player.getEntity()) : 1.0F);
+        final float strength = properties.dodgeStrength * (entity instanceof CharacterPlayer player ? handler.getDodgeStrength(player.getEntity()) : 1.0F);
 
         if (d0 == 0 && d1 == 0) {
             // case -> Player is not moving. Make them backpedal
+            /*
             if (direction.length() < 1.0E-4D) {
                 direction = new Vector3();
             }
@@ -112,6 +113,8 @@ public class DodgeEvent extends CombatEvent<CharacterEntity<?>> {
                     initialVelocity.getY(),
                     initialVelocity.getZ() / 2.0D - direction.getZ()
             );
+            */
+            return null;
         } else {
             // case -> Player is currently moving
             Vector3 movement = new Vector3(d0, 0.0, d1);
@@ -119,7 +122,7 @@ public class DodgeEvent extends CombatEvent<CharacterEntity<?>> {
             movement.normalize();
             final double e0 = movement.getX() - direction.getX();
             final double e1 = movement.getZ() - direction.getZ();
-            if (e0 > -0.1 && e0 < 0.1 && e1 > -0.1 && e1 < 0.1) {
+            if (e0 > -0.35 && e0 < 0.35 && e1 > -0.35 && e1 < 0.35) {
                 // case -> Player is moving in the direction they are facing
                 //         we do not want a dodge
                 return null;

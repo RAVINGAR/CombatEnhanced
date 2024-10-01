@@ -1,19 +1,16 @@
 package com.ravingarinc.combat.compatibility;
 
-import com.ravingarinc.combat.CombatEnhanced;
-import com.ravingarinc.combat.combat.CombatManager;
-import com.ravingarinc.combat.file.Settings;
+import com.ravingarinc.api.module.RavinPlugin;
+import com.ravingarinc.combat.file.Properties;
 import net.Indyuce.mmoitems.api.player.PlayerData;
 import net.Indyuce.mmoitems.api.player.RPGPlayer;
 import org.bukkit.entity.Player;
 
-public class MMOHandler implements RPGHandler {
-    private final CombatEnhanced plugin;
-    private final Settings settings;
+public class MMOWrapper implements RPGWrapper {
+    private final Properties settings;
 
-    public MMOHandler(final CombatEnhanced plugin) {
-        this.plugin = plugin;
-        this.settings = plugin.getModule(CombatManager.class).getSettings();
+    public MMOWrapper(final RavinPlugin plugin) {
+        this.settings = plugin.getModule(Properties.class);
     }
 
     @Override
@@ -39,7 +36,7 @@ public class MMOHandler implements RPGHandler {
     }
 
     @Override
-    public Settings getSettings() {
+    public Properties getProperties() {
         return settings;
     }
 }

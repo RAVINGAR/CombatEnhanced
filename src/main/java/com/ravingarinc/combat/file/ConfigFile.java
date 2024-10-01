@@ -1,9 +1,9 @@
 package com.ravingarinc.combat.file;
 
+import com.ravingarinc.api.module.RavinPlugin;
 import com.ravingarinc.combat.CombatEnhanced;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,12 +12,12 @@ import java.io.InputStreamReader;
 import java.util.logging.Level;
 
 public class ConfigFile {
-    private final JavaPlugin plugin;
+    private final RavinPlugin plugin;
     private final String name;
     private final File file;
     private final FileConfiguration config;
 
-    public ConfigFile(final JavaPlugin plugin, final String name) {
+    public ConfigFile(final RavinPlugin plugin, final String name) {
         this.plugin = plugin;
         this.name = name;
         this.file = new File(plugin.getDataFolder(), name);

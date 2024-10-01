@@ -1,60 +1,68 @@
 package com.ravingarinc.combat.compatibility;
 
+import com.ravingarinc.api.module.Module;
+import com.ravingarinc.api.module.RavinPlugin;
 import com.ravingarinc.combat.CombatEnhanced;
-import com.ravingarinc.combat.compatibility.kalentire.KalentireHandler;
-import com.ravingarinc.combat.file.Settings;
+import com.ravingarinc.combat.compatibility.kalentire.KalentireWrapper;
+import com.ravingarinc.combat.file.Properties;
 import org.bukkit.entity.Player;
-import org.jetbrains.annotations.NotNull;
 
-public interface RPGHandler {
+public class RPGHandler extends Module implements RPGWrapper {
+    private RPGWrapper wrapper;
 
-    @NotNull
-    static RPGHandler getHandler(final CombatEnhanced plugin) {
+    public RPGHandler(RavinPlugin plugin) {
+        super(RPGHandler.class, plugin);
+    }
+
+    @Override
+    public void load() {
         if (plugin.getServer().getPluginManager().getPlugin("KalentireRPG") != null) {
-            return new KalentireHandler(plugin);
+            wrapper = new KalentireWrapper((CombatEnhanced) plugin);
         } else if (plugin.getServer().getPluginManager().getPlugin("MMOItems") != null) {
-            return new MMOHandler(plugin);
+            wrapper = new MMOWrapper(plugin);
+        } else {
+            wrapper = new DefaultWrapper(plugin);
         }
-        return new DefaultHandler(plugin);
+        wrapper.load();
     }
 
-    default void load() {}
-
-    default void cancel() {}
-    /**
-     * Attempts to remove stamina, only if the given player has enough.
-     *
-     * @param player The player
-     * @param amount The amount
-     * @return true if stamina was taken, or false if not
-     */
-    boolean tryRemoveStamina(Player player, int amount);
-
-    /**
-     * Attempts to remove mana, only if the given player has enough.
-     *
-     * @param player The player
-     * @param amount The amount
-     * @return true if mana was taken, or false if not
-     */
-    boolean tryRemoveMana(Player player, int amount);
-
-    default float getDodgeStrength(final Player player) {
-        return getSettings().dodgeStrength;
+    @Override
+    public void cancel() {
+        wrapper.cancel();
     }
 
-    default int getDodgeCost(final Player player) {
-        return getSettings().dodgeStaminaCost;
+    @Override
+    public boolean tryRemoveStamina(Player player, int amount) {
+        return wrapper.tryRemoveStamina(player, amount);
     }
 
-    default long getShieldCooldown(final Player player) {
-        return getSettings().blockCooldown;
+    @Override
+    public boolean tryRemoveMana(Player player, int amount) {
+        return wrapper.tryRemoveMana(player, amount);
     }
 
-    /**
-     * Get the duration of the dodge in milliseconds.n
-     */
-    default long getDodgeDuration(final Player player) { return getSettings().dodgeDuration; }
+    @Override
+    public float getDodgeStrength(Player player) {
+        return wrapper.getDodgeStrength(player);
+    }
 
-    Settings getSettings();
+    @Override
+    public int getDodgeCost(Player player) {
+        return wrapper.getDodgeCost(player);
+    }
+
+    @Override
+    public long getShieldCooldown(Player player) {
+        return wrapper.getShieldCooldown(player);
+    }
+
+    @Override
+    public long getDodgeDuration(Player player) {
+        return wrapper.getDodgeDuration(player);
+    }
+
+    @Override
+    public Properties getProperties() {
+        return plugin.getModule(Properties.class);
+    }
 }

@@ -1,5 +1,6 @@
 package com.ravingarinc.combat.character;
 
+import com.ravingarinc.api.module.RavinPlugin;
 import com.ravingarinc.combat.CombatEnhanced;
 import com.ravingarinc.combat.api.AsyncHandler;
 import com.ravingarinc.combat.api.AsynchronousException;
@@ -11,7 +12,7 @@ import java.util.Optional;
 
 public class CharacterMonster extends CharacterEntity<Mob> {
 
-    protected CharacterMonster(final CombatEnhanced plugin, final Mob entity) {
+    protected CharacterMonster(final RavinPlugin plugin, final Mob entity) {
         super(plugin, entity);
     }
 

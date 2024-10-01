@@ -3,7 +3,7 @@ package com.ravingarinc.combat.combat.event;
 import com.ravingarinc.combat.api.AsyncHandler;
 import com.ravingarinc.combat.api.AsynchronousException;
 import com.ravingarinc.combat.character.CharacterPlayer;
-import com.ravingarinc.combat.file.Settings;
+import com.ravingarinc.combat.file.Properties;
 import io.lumine.mythic.lib.api.player.MMOPlayerData;
 import org.bukkit.Material;
 import org.jetbrains.annotations.Async;
@@ -13,9 +13,9 @@ import org.jetbrains.annotations.Blocking;
 We can make this an abstract class later if we want to allow for monsters to block also
  */
 public class PlayerBlockEvent extends CombatEvent<CharacterPlayer> {
-    protected Settings settings;
+    protected Properties settings;
 
-    public PlayerBlockEvent(final CharacterPlayer entity, final long start, final Settings settings) {
+    public PlayerBlockEvent(final CharacterPlayer entity, final long start, final Properties settings) {
         super(entity, start, settings.blockDuration);
         this.settings = settings;
     }
