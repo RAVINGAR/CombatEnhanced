@@ -3,8 +3,8 @@ package com.ravingarinc.combat.combat;
 import com.ravingarinc.api.module.ModuleListener;
 import com.ravingarinc.api.module.ModuleLoadException;
 import com.ravingarinc.api.module.RavinPlugin;
-import com.ravingarinc.combat.CombatEnhanced;
 import com.ravingarinc.combat.character.CharacterManager;
+import com.ravingarinc.combat.compatibility.RPGHandler;
 import com.ravingarinc.combat.compatibility.RPGWrapper;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -39,7 +39,7 @@ public class CombatListener extends ModuleListener {
     public void load() throws ModuleLoadException {
         manager = plugin.getModule(CombatManager.class);
         characters = plugin.getModule(CharacterManager.class);
-        handler = ((CombatEnhanced)plugin).getRPGHandler();
+        handler = plugin.getModule(RPGHandler.class);
 
         super.load();
     }

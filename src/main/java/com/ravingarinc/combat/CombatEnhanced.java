@@ -9,7 +9,6 @@ import com.ravingarinc.combat.combat.CombatListener;
 import com.ravingarinc.combat.combat.CombatManager;
 import com.ravingarinc.combat.command.ReloadCommand;
 import com.ravingarinc.combat.compatibility.RPGHandler;
-import com.ravingarinc.combat.compatibility.RPGWrapper;
 import com.ravingarinc.combat.file.Properties;
 import org.jetbrains.annotations.Nullable;
 
@@ -18,8 +17,6 @@ import java.util.logging.Level;
 public final class CombatEnhanced extends RavinPluginJava {
 
     private static CombatEnhanced instance;
-
-    private RPGWrapper handler;
 
     /**
      * Expects a message where %s will be replaced by the provided terms
@@ -68,17 +65,12 @@ public final class CombatEnhanced extends RavinPluginJava {
     public void loadModules() {
 
         addModule(Properties.class);
+        addModule(RPGHandler.class);
         addModule(CharacterManager.class);
         addModule(CombatManager.class);
 
         // add listeners
         addModule(CombatListener.class);
         addModule(CharacterListener.class);
-
-        addModule(RPGHandler.class);
-    }
-
-    public RPGWrapper getRPGHandler() {
-        return handler;
     }
 }

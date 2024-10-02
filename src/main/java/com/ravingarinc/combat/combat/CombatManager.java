@@ -2,7 +2,6 @@ package com.ravingarinc.combat.combat;
 
 import com.ravingarinc.api.module.Module;
 import com.ravingarinc.api.module.RavinPlugin;
-import com.ravingarinc.combat.CombatEnhanced;
 import com.ravingarinc.combat.api.BukkitApi;
 import com.ravingarinc.combat.api.Vector3;
 import com.ravingarinc.combat.character.CharacterManager;
@@ -10,6 +9,7 @@ import com.ravingarinc.combat.combat.event.DodgeEvent;
 import com.ravingarinc.combat.combat.event.PlayerBlockEvent;
 import com.ravingarinc.combat.combat.runner.DodgeRunner;
 import com.ravingarinc.combat.combat.runner.IdentifierRunner;
+import com.ravingarinc.combat.compatibility.RPGHandler;
 import com.ravingarinc.combat.compatibility.RPGWrapper;
 import com.ravingarinc.combat.file.Properties;
 import org.bukkit.Material;
@@ -121,7 +121,7 @@ public class CombatManager extends Module {
     @Override
     public void load() {
         properties = plugin.getModule(Properties.class);
-        handler = ((CombatEnhanced)plugin).getRPGHandler();
+        handler = plugin.getModule(RPGHandler.class);
         characterManager = plugin.getModule(CharacterManager.class);
         dodgeRunner = new DodgeRunner(properties);
         blockRunner = handler.getBlockRunner();

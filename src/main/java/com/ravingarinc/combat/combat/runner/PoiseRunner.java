@@ -80,6 +80,9 @@ public class PoiseRunner extends BukkitRunnable {
             if(damageOverPoise <= 0) {
                 return; // Still below poise
             }
+            // todo the issue is that if a player was blocking all this damage, if they were to suddenly unblock and
+            //  then hit with another attack  that might even be small in scale, this would cause it to instantly
+            //  cause a stun lock since the higher damage with a shield whilst blocking temporarily increased tolerance.
             final var effect = new PoiseStunEffect(
                     event.getAttacker().getEntity(),
                     Math.min(settings.minStunDuration + (int)(damageOverPoise / settings.stunThreshold) * settings.stunDurationPerThreshold, settings.maxStunDuration),
