@@ -4,6 +4,7 @@ import com.herocraftonline.heroes.api.events.HeroesDamageEvent;
 import com.herocraftonline.heroes.characters.CharacterTemplate;
 import com.ravingarinc.api.module.RavinPlugin;
 import com.ravingarinc.combat.api.BukkitApi;
+import com.ravingarinc.combat.character.CharacterEntity;
 import com.ravingarinc.combat.character.CharacterManager;
 import com.ravingarinc.combat.combat.event.DamageEvent;
 import com.ravingarinc.combat.compatibility.kalentire.KalentireWrapper;
@@ -51,6 +52,11 @@ public class PoiseRunner extends BukkitRunnable {
             remove(iterator.next());
         }
         toRemove.clear();
+    }
+
+    public void addPoiseDamage(CharacterEntity<?> entity, final double poiseDamage) {
+        final var set = mappedEvents.computeIfAbsent(entity.getUniqueId(), u -> ConcurrentHashMap.newKeySet());
+        set.add(new DamageEvent(entity, poiseDamage, System.currentTimeMillis(), settings.poiseWindow));
     }
 
     @BukkitApi

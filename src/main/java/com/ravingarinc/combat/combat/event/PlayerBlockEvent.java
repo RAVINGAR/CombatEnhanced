@@ -27,10 +27,14 @@ public class PlayerBlockEvent extends CombatEvent<CharacterPlayer> {
         if (System.currentTimeMillis() > getExpireTime()) {
             interrupt();
         }
-        if(!entity.isBlocking()) {
-            final var recovery = (int) MMOPlayerData.get(entity.getUniqueId()).getStatMap().getStat("BLOCK_RECOVERY");
-            AsyncHandler.applySynchronously(null, v -> entity.getEntity().setCooldown(Material.SHIELD, recovery));
-            interrupt();
-        }
+        AsyncHandler.executeBlockingSyncComputation(() -> {
+            final var bukkitEntity = entity.getEntity();
+            if(!bukkitEntity.isBlocking()) {
+                final var recovery = (int) MMOPlayerData.get(entity.getUniqueId()).getStatMap().getStat("BLOCK_RECOVERY");
+                bukkitEntity.setCooldown(Material.SHIELD, recovery);
+                interrupt();
+            }
+            return null;
+        });
     }
 }

@@ -30,12 +30,14 @@ public class KalentireBlockRunner extends BlockRunner {
         if (defender.isBlocking() && properties.blockDamageCauses.contains(event.getCause())) {
             final int requiredStamina = getRequiredStamina(defender, event) / 2;
             if (handler.tryRemoveStamina(defender, requiredStamina)) {
-                defender.sendMessage(ChatColor.RED + "You blocked the attack!");
+                defender.sendMessage(ChatColor.RED + "< You blocked the attack! >");
                 defender.playSound(defender, Sound.ENTITY_ARROW_HIT_PLAYER, 1.0F, 1.0F);
                 defender.getWorld().playSound(defender, Sound.ITEM_SHIELD_BLOCK, 1.0F, 1.0F);
 
                 if (event.getDamager() instanceof LivingEntity livingAttacker) {
                     throwEntity(defender, livingAttacker, properties.blockThrowStrength);
+                    ((KalentireWrapper)handler).addPoiseDamage(livingAttacker,
+                            10.0F * KalentireWrapper.getPerfectBlockBonus(defender));
                     livingAttacker.playHurtAnimation(0F);
                 } else if (event.getDamager() instanceof AbstractArrow arrow) {
                     defender.launchProjectile(arrow.getClass(), arrow.getVelocity().multiply(-0.5)).setDamage(arrow.getDamage() * 0.5);

@@ -33,7 +33,6 @@ public class BlockRunner extends IdentifierRunner<PlayerBlockEvent, EntityDamage
                 defender.sendMessage(ChatColor.RED + "You blocked the attack!");
                 defender.playSound(defender, Sound.ENTITY_ARROW_HIT_PLAYER, 1.0F, 1.0F);
                 defender.getWorld().playSound(defender, Sound.ITEM_SHIELD_BLOCK, 1.0F, 1.0F);
-
                 if (event.getDamager() instanceof LivingEntity livingAttacker) {
                     throwEntity(defender, livingAttacker, properties.blockThrowStrength);
                     livingAttacker.playEffect(EntityEffect.HURT);

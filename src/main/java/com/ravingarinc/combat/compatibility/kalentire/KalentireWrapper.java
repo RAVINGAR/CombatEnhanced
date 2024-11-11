@@ -34,6 +34,8 @@ public class KalentireWrapper implements RPGWrapper, Listener {
 
     private PoiseRunner poiseRunner;
 
+    private com.ravingarinc.combat.character.CharacterManager enhancedManager;
+
     // This should mirror Kalentire API
     public static final String DODGE_TICKS = "DODGE_TICKS";
 
@@ -52,6 +54,7 @@ public class KalentireWrapper implements RPGWrapper, Listener {
     public KalentireWrapper(final RavinPlugin plugin) {
         this.plugin = plugin;
         this.settings = plugin.getModule(Properties.class);
+        this.enhancedManager = plugin.getModule(com.ravingarinc.combat.character.CharacterManager.class);
         // TODO Dodge Values should be based on player movement
     }
 
@@ -104,7 +107,7 @@ public class KalentireWrapper implements RPGWrapper, Listener {
     @Override
     public float getDodgeStrength(final Player player) {
         //CombatEnhanced.log(Level.WARNING, "Debug -> Player's Speed is " + speed);
-        return settings.dodgeStrength + (getManager().getHero(player).getAttributeValue(AttributeType.DEXTERITY) * settings.dodgeStrength / 10F);
+        return settings.dodgeStrength + (getManager().getHero(player).getAttributeValue(AttributeType.DEXTERITY) * (settings.dodgeStrength / 20F));
     }
 
     @Override
@@ -126,6 +129,12 @@ public class KalentireWrapper implements RPGWrapper, Listener {
 
     public static double getPerfectBlockBonus(final Player player) {
         return MMOPlayerData.get(player).getStatMap().getStat(PERFECT_BLOCK_BONUS);
+    }
+
+    public void addPoiseDamage(final LivingEntity target, final double poiseDamage) {
+        enhancedManager.getCharacter(target).ifPresent(character -> {
+            this.poiseRunner.addPoiseDamage(character, poiseDamage);
+        });
     }
 
     @Override

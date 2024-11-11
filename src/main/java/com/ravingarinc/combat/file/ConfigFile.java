@@ -15,7 +15,7 @@ public class ConfigFile {
     private final RavinPlugin plugin;
     private final String name;
     private final File file;
-    private final FileConfiguration config;
+    private FileConfiguration config;
 
     public ConfigFile(final RavinPlugin plugin, final String name) {
         this.plugin = plugin;
@@ -39,7 +39,7 @@ public class ConfigFile {
     }
 
     public final void reloadConfig() {
-        saveDefaultConfig();
+        this.config = YamlConfiguration.loadConfiguration(file);
     }
 
     public final void saveConfig() {
