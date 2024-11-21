@@ -18,8 +18,6 @@ public class DamageEvent extends CombatEvent<CharacterEntity<?>> {
 
     @Override
     protected void tick() throws AsynchronousException {
-        // Todo implement, basically if the character has an immunity from poise active, then prevent them from gaining
-        // any more poise
         if(System.currentTimeMillis() > getExpireTime()) {
             interrupt();
         }

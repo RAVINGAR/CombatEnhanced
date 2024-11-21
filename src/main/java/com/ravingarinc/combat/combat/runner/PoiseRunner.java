@@ -60,7 +60,7 @@ public class PoiseRunner extends BukkitRunnable {
     }
 
     @BukkitApi
-    public void handle(final HeroesDamageEvent event, final double damage) {
+    public void handle(final HeroesDamageEvent event, final double damage, final boolean useImpact) {
         final CharacterTemplate character = event.getDefender();
         final var opt = characterManager.getCharacter(character.getEntity());
         if(opt.isEmpty()) {
@@ -71,7 +71,7 @@ public class PoiseRunner extends BukkitRunnable {
         }
         final var entity = opt.get();
         final var set = mappedEvents.computeIfAbsent(character.getUUID(), u -> ConcurrentHashMap.newKeySet());
-        final var impact = KalentireWrapper.getImpact(event.getAttacker().getEntity());
+        final var impact = useImpact ? KalentireWrapper.getImpact(event.getAttacker().getEntity()) : 0;
         set.add(new DamageEvent(entity, damage + impact, System.currentTimeMillis(), settings.poiseWindow));
         if(character.hasEffect(PoiseImmunityEffect.EFFECT_NAME)) {
             return;

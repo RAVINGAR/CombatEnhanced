@@ -17,13 +17,12 @@ import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.concurrent.ThreadSafe;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Manages combat interactions and computations. Any methods marked with AsyncHandler.Execute means that the method is
@@ -39,6 +38,8 @@ public class CombatManager extends Module {
     private CharacterManager characterManager;
     private IdentifierRunner<PlayerBlockEvent, EntityDamageByEntityEvent> blockRunner;
     private IdentifierRunner<DodgeEvent, EntityDamageByEntityEvent> dodgeRunner;
+
+    private final List<IdentifierRunner<?, EntityDamageByEntityEvent>> damageEventRunners = new ArrayList<>();
 
     private RPGWrapper handler;
     private Properties properties;
@@ -101,8 +102,8 @@ public class CombatManager extends Module {
     @BukkitApi
     public void handle(final EntityDamageByEntityEvent event) {
         final UUID uuid = event.getEntity().getUniqueId();
-        if (!blockRunner.handle(uuid, event)) {
-            dodgeRunner.handle(uuid, event);
+        for(IdentifierRunner<?, EntityDamageByEntityEvent> runner : damageEventRunners) {
+            if(runner.handle(uuid, event)) break;
         }
     }
 
@@ -126,14 +127,22 @@ public class CombatManager extends Module {
         dodgeRunner = new DodgeRunner(properties);
         blockRunner = handler.getBlockRunner();
 
-        dodgeRunner.runTaskTimerAsynchronously(plugin, 5, PERIOD);
-        blockRunner.runTaskTimerAsynchronously(plugin, 5, PERIOD);
+        registerRunner(dodgeRunner);
+        registerRunner(blockRunner);
+
+        handler.injectRunners(this);
+
+        damageEventRunners.forEach(runner -> runner.runTaskTimerAsynchronously(plugin, 5, PERIOD));
+    }
+
+    public void registerRunner(final IdentifierRunner<?, EntityDamageByEntityEvent> runner) {
+        damageEventRunners.add(runner);
     }
 
     @Override
     public void cancel() {
-        dodgeRunner.cancel();
-        blockRunner.cancel();
+        damageEventRunners.forEach(BukkitRunnable::cancel);
+        damageEventRunners.clear();
     }
 
 }

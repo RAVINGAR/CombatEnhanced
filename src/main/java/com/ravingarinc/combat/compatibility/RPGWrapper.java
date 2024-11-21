@@ -1,5 +1,6 @@
 package com.ravingarinc.combat.compatibility;
 
+import com.ravingarinc.combat.combat.CombatManager;
 import com.ravingarinc.combat.combat.runner.BlockRunner;
 import com.ravingarinc.combat.file.Properties;
 import org.bukkit.entity.Player;
@@ -48,5 +49,8 @@ public interface RPGWrapper {
 
     default BlockRunner getBlockRunner() {
         return new BlockRunner(this);
+    }
+    default void injectRunners(CombatManager manager) {
+
     }
 }
