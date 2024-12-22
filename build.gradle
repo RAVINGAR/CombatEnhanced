@@ -49,11 +49,6 @@ repositories {
     }
 
     maven {
-        name 'jitpack'
-        url "https://jitpack.io"
-    }
-
-    maven {
         url = 'https://mvn.lumine.io/repository/maven-public/'
         content {
             includeGroup 'io.lumine'
@@ -64,14 +59,19 @@ repositories {
         name 'paper-repo'
         url 'https://repo.papermc.io/repository/maven-public/'
     }
+
+    maven {
+        name 'jitpack'
+        url "https://jitpack.io"
+    }
 }
 
 dependencies {
     bukkitLibrary 'javax.vecmath:vecmath:1.5.2'
     compileOnly 'io.papermc.paper:paper-api:1.20.1-R0.1-SNAPSHOT'
     compileOnly 'com.herocraftonline.heroes:Heroes:1.10.8-SNAPSHOT'
-    compileOnly 'net.Indyuce:MMOItems-API:6.9.2-SNAPSHOT'
-    compileOnly 'io.lumine:MythicLib-dist:1.5.2-SNAPSHOT'
+    compileOnly 'net.Indyuce:MMOItems-API:6.9.5-SNAPSHOT'
+    compileOnly 'io.lumine:MythicLib-dist:1.6.2-SNAPSHOT'
     compileOnly 'com.comphenix.protocol:ProtocolLib:5.1.0'
     compileOnly 'com.ravingarinc.kalentirerpg:Kalentire:1.20.1'
 
@@ -82,7 +82,7 @@ dependencies {
     implementation("com.github.RAVINGAR.RavinAPI:module:1.5.4")
     implementation("com.github.RAVINGAR.RavinAPI:concurrent:1.5.4")
 
-    compileOnly 'io.lumine:Mythic-Dist:5.5.0'
+    compileOnly 'io.lumine:Mythic-Dist:5.6.2'
 
     testImplementation 'org.jetbrains:annotations:23.1.0'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0'

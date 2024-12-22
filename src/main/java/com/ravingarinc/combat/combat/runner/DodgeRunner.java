@@ -1,7 +1,7 @@
 package com.ravingarinc.combat.combat.runner;
 
 import com.ravingarinc.combat.combat.event.DodgeEvent;
-import com.ravingarinc.combat.file.Properties;
+import com.ravingarinc.combat.compatibility.RPGWrapper;
 import io.lumine.mythic.lib.MythicLib;
 import io.lumine.mythic.lib.damage.DamageType;
 import org.bukkit.ChatColor;
@@ -12,10 +12,11 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 
 public class DodgeRunner extends IdentifierRunner<DodgeEvent, EntityDamageByEntityEvent> {
 
+    private final RPGWrapper handler;
 
-
-    public DodgeRunner(final Properties settings) {
-        super(settings);
+    public DodgeRunner(final RPGWrapper handler) {
+        super(handler.getProperties());
+        this.handler = handler;
     }
 
     @Override
@@ -35,6 +36,9 @@ public class DodgeRunner extends IdentifierRunner<DodgeEvent, EntityDamageByEnti
             meta.multiplicativeModifier(mitigation, DamageType.SKILL);
             meta.multiplicativeModifier(mitigation, DamageType.WEAPON);
             event.setDamage(event.getDamage() * (mitigation));
+
+            // Todo, check if we want poise parsed after or before mitigation.
+            handler.onDamageEvent(event);
             return true;
         }
         return false;

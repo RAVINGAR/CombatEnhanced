@@ -22,6 +22,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.jetbrains.annotations.Nullable;
 
 public class PoiseStunEffect extends PeriodicExpirableEffect {
     public static final String EFFECT_NAME = "PoiseStunEffect";
@@ -39,9 +40,9 @@ public class PoiseStunEffect extends PeriodicExpirableEffect {
     }
     private final double vulnerability;
     private final long cooldown;
-    private final Entity applierEntity;
+    private final @Nullable Entity applierEntity;
     private final AtomicDouble bonusVulnerability = new AtomicDouble(0);
-    public PoiseStunEffect(Entity applierEntity, long duration, long cooldown, double vulnerability) {
+    public PoiseStunEffect(@Nullable Entity applierEntity, long duration, long cooldown, double vulnerability) {
         super(null, EFFECT_NAME, null, 500L, duration, null, null);
         this.vulnerability = vulnerability;
         this.cooldown = cooldown;

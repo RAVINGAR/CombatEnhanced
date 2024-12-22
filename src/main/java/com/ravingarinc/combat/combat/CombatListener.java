@@ -39,7 +39,7 @@ public class CombatListener extends ModuleListener {
     public void load() throws ModuleLoadException {
         manager = plugin.getModule(CombatManager.class);
         characters = plugin.getModule(CharacterManager.class);
-        handler = plugin.getModule(RPGHandler.class);
+        handler = plugin.getModule(RPGHandler.class).getWrapper();
 
         super.load();
     }

@@ -70,12 +70,13 @@ public class BlockRunner extends IdentifierRunner<PlayerBlockEvent, EntityDamage
     }
 
     private void handlePostEvent(final EntityDamageByEntityEvent event, final LivingEntity defender, final double mitigation) {
+        handler.onDamageEvent(event);
         final double factor = (1.0 - mitigation);
         final double damage = event.getDamage() * (1.0 - factor);
         if (damage > 0) {
             final var meta = MythicLib.inst().getDamage().findAttack(event).getDamage();
             meta.multiplicativeModifier(mitigation, DamageType.PHYSICAL);
-            meta.multiplicativeModifier(mitigation, DamageType.MAGIC); // TODO make this not mitigate psychic attacks
+            meta.multiplicativeModifier(mitigation, DamageType.MAGIC);
             meta.multiplicativeModifier(mitigation, DamageType.PROJECTILE);
             meta.multiplicativeModifier(mitigation, DamageType.SKILL);
             meta.multiplicativeModifier(mitigation, DamageType.WEAPON);
@@ -107,6 +108,8 @@ public class BlockRunner extends IdentifierRunner<PlayerBlockEvent, EntityDamage
         target.setHealth(newHealth);
         target.setAbsorptionAmount(newShield);
         target.playEffect(EntityEffect.HURT);
+
+        // TODO Update this!
     }
 
     public void throwEntity(final Entity source, final LivingEntity target, final float strength) {

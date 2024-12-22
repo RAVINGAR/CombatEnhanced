@@ -1,6 +1,6 @@
 package com.ravingarinc.combat.combat.runner;
 
-import com.herocraftonline.heroes.api.events.HeroesDamageEvent;
+import com.herocraftonline.heroes.Heroes;
 import com.herocraftonline.heroes.characters.CharacterTemplate;
 import com.ravingarinc.api.module.RavinPlugin;
 import com.ravingarinc.combat.api.BukkitApi;
@@ -12,6 +12,9 @@ import com.ravingarinc.combat.compatibility.kalentire.effect.PoiseImmunityEffect
 import com.ravingarinc.combat.compatibility.kalentire.effect.PoiseStunEffect;
 import com.ravingarinc.combat.file.Properties;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 
@@ -60,8 +63,9 @@ public class PoiseRunner extends BukkitRunnable {
     }
 
     @BukkitApi
-    public void handle(final HeroesDamageEvent event, final double damage, final boolean useImpact) {
-        final CharacterTemplate character = event.getDefender();
+    public void handle(final EntityDamageEvent event, final double damage, final Entity source, final double impact) {
+        final CharacterTemplate character =
+                Heroes.getInstance().getCharacterManager().getCharacter((LivingEntity)event.getEntity());
         final var opt = characterManager.getCharacter(character.getEntity());
         if(opt.isEmpty()) {
             return;
@@ -71,7 +75,6 @@ public class PoiseRunner extends BukkitRunnable {
         }
         final var entity = opt.get();
         final var set = mappedEvents.computeIfAbsent(character.getUUID(), u -> ConcurrentHashMap.newKeySet());
-        final var impact = useImpact ? KalentireWrapper.getImpact(event.getAttacker().getEntity()) : 0;
         set.add(new DamageEvent(entity, damage + impact, System.currentTimeMillis(), settings.poiseWindow));
         if(character.hasEffect(PoiseImmunityEffect.EFFECT_NAME)) {
             return;
@@ -90,7 +93,7 @@ public class PoiseRunner extends BukkitRunnable {
             //  then hit with another attack  that might even be small in scale, this would cause it to instantly
             //  cause a stun lock since the higher damage with a shield whilst blocking temporarily increased tolerance.
             final var effect = new PoiseStunEffect(
-                    event.getAttacker().getEntity(),
+                    source,
                     Math.min(settings.minStunDuration + (int)(damageOverPoise / settings.stunThreshold) * settings.stunDurationPerThreshold, settings.maxStunDuration),
                     settings.stunCooldown,
                     damageOverPoise * settings.vulnerabilityPerPoise);

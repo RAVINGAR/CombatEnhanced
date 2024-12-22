@@ -1,12 +1,9 @@
 package com.ravingarinc.combat.compatibility.kalentire;
 
 import com.herocraftonline.heroes.Heroes;
-import com.herocraftonline.heroes.api.events.HeroesDamageEvent;
-import com.herocraftonline.heroes.api.events.ProjectileDamageEvent;
-import com.herocraftonline.heroes.api.events.WeaponDamageEvent;
 import com.herocraftonline.heroes.attributes.AttributeType;
 import com.herocraftonline.heroes.characters.Hero;
-import com.herocraftonline.heroes.nms.NMSHandler;
+import com.ravingarinc.api.I;
 import com.ravingarinc.api.module.RavinPlugin;
 import com.ravingarinc.combat.character.CharacterManager;
 import com.ravingarinc.combat.combat.CombatManager;
@@ -18,18 +15,22 @@ import com.ravingarinc.combat.file.Properties;
 import io.lumine.mythic.bukkit.MythicBukkit;
 import io.lumine.mythic.lib.MythicLib;
 import io.lumine.mythic.lib.api.item.NBTItem;
+import io.lumine.mythic.lib.api.player.EquipmentSlot;
 import io.lumine.mythic.lib.api.player.MMOPlayerData;
-import io.lumine.mythic.lib.damage.DamageType;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+
+import java.util.logging.Level;
 
 public class KalentireWrapper implements RPGWrapper, Listener {
     private final RavinPlugin plugin;
@@ -82,6 +83,8 @@ public class KalentireWrapper implements RPGWrapper, Listener {
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
         PoiseStunEffect.register(plugin);
 
+        bowRunner = new BowRunner(this);
+        bowRunner.runTaskAsynchronously(plugin);
         poiseRunner = new PoiseRunner(plugin, this);
         poiseRunner.runTaskTimerAsynchronously(plugin, 0L, 5L);
     }
@@ -91,6 +94,7 @@ public class KalentireWrapper implements RPGWrapper, Listener {
         HandlerList.unregisterAll(this);
         PoiseStunEffect.unregister();
 
+        bowRunner.cancel();
         poiseRunner.cancel();
     }
 
@@ -202,46 +206,38 @@ public class KalentireWrapper implements RPGWrapper, Listener {
     }
 
 
-    @EventHandler(priority = EventPriority.HIGH)
-    public void onHeroesDamageEvent(final HeroesDamageEvent event) {
+    /**
+     * Handles event before armour mitigiation is considered.
+     * @param event
+     */
+    @Override
+    public void onDamageEvent(final EntityDamageEvent event) {
+
+
         double damage = event.getDamage();
-        // todo should poise be added under generic damage events?
-        boolean useImpact = true;
-        if(event instanceof WeaponDamageEvent) {
-            final var metadata = MythicLib.plugin.getDamage().findAttack(event.getOriginalEvent());
-            damage = metadata.getDamage().getDamage();
-            // todo dont let people melee with bow.
-            if(event.getAttacker() instanceof Hero hero && hero.getPlayer().getAttackCooldown() != 1.0F) {
-                useImpact = false;
+        double impact = 0.0;
+        Entity source = null;
+        if(event instanceof EntityDamageByEntityEvent castEvent) {
+            if(bowRunner.handle(castEvent)) {
+                // This returns true and therefore does not consider poise calculations as the bow runner should
+                // handle it itself.
+                return;
             }
-        } else if(event instanceof ProjectileDamageEvent) {
-            final var metadata = MythicLib.plugin.getDamage().findAttack(event.getOriginalEvent());
-
-            if(event.getAttacker() instanceof Hero hero) {
-                bowRunner.get(hero.getUUID()).ifPresent(shot -> {
-                    final var stats = shot.getStats();
-
-                    // todo if either person changes dimensions mid flight this will throw an error
-                    final var distanceSq = hero.getPlayer().getLocation().distanceSquared(event.getDefender().getEntity()
-                            .getLocation());
-                    final var rangeSq = Math.pow(stats.fallOffRange(), 2);
-                    var rawDamage = stats.damage();
-                    if(distanceSq > rangeSq) {
-                        rawDamage =
-                                Math.max(0.0,
-                                        rawDamage * (1.0 + ((Math.sqrt(distanceSq) - stats.fallOffRange()) * stats.fallOffReduction())));
-                    }
-                    if(rawDamage == 0.0) return;
-                    metadata.getDamage().add(rawDamage, stats.damageType().toMythicElement(),
-                            DamageType.PROJECTILE);
-                    NMSHandler.getInterface().knockBack(event.getDefender().getEntity(),
-                            ((ProjectileDamageEvent) event).getProjectile().getLocation(), (float)stats.knockback());
-                    stats.effects().forEach(effect -> event.getDefender().addEffect(effect));
-                });
+            if(castEvent.getDamager() instanceof LivingEntity entity) {
+                impact = KalentireWrapper.getImpact(entity);
+                source = entity;
             }
-            damage = metadata.getDamage().getDamage();
+            damage = MythicLib.plugin.getDamage().findAttack(event).getDamage().getDamage();
         }
-        poiseRunner.handle(event, damage, useImpact);
+        if(damage > 0.0) {
+            I.log(Level.WARNING, "Handling Poise on Damage Event, Event Damage = " + event.getDamage() + ", Metadata " +
+                    "Damage = " + damage);
+            poiseRunner.handle(event, damage, source, impact);
+        }
+    }
+
+    public PoiseRunner getPoiseRunner() {
+        return poiseRunner;
     }
 
     @EventHandler
@@ -261,18 +257,13 @@ public class KalentireWrapper implements RPGWrapper, Listener {
             final var category = ShootEvent.Category.matchCategory(event.getBow());
             if(category == null) return;
 
-            final var statMap = MMOPlayerData.get(player).getStatMap(); // todo do we cache here?
+            final var statMap = MMOPlayerData.get(player).getStatMap().cache(EquipmentSlot.MAIN_HAND); // todo do we cache
+            // here?
             final var consumable = NBTItem.get(consumed);
+            if(!consumable.hasType()) return;
 
-            final var force = event.getForce();
-
-            final var shootEvent = new ShootEvent(
-                    category,
-                    characterManager.getPlayer(player),
-                    statMap,
-                    consumable,
-                    force);
-            bowRunner.add(shootEvent);
+            bowRunner.add(player.getUniqueId(), player.getLocation(), statMap,
+                    consumable, event.getForce());
             final var velocity =
                     (statMap.getStat(KalentireWrapper.VELOCITY) + consumable.getDouble(KalentireWrapper.VELOCITY));
             final var proj = event.getProjectile();
@@ -282,8 +273,6 @@ public class KalentireWrapper implements RPGWrapper, Listener {
 
     @Override
     public void injectRunners(CombatManager manager) {
-        bowRunner = new BowRunner(this);
-        manager.registerRunner(bowRunner);
     }
 
     @Override

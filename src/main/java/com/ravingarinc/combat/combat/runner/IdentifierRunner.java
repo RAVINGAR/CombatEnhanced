@@ -3,16 +3,16 @@ package com.ravingarinc.combat.combat.runner;
 import com.ravingarinc.combat.api.BukkitApi;
 import com.ravingarinc.combat.combat.event.CombatEvent;
 import com.ravingarinc.combat.file.Properties;
-import org.bukkit.event.Event;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public abstract class IdentifierRunner<T extends CombatEvent<?>, E extends Event> extends EventRunner<T, E> {
+public abstract class IdentifierRunner<T extends CombatEvent<?>, E extends EntityDamageEvent> extends EventRunner<T, E> {
     protected final Properties properties;
-    private final ConcurrentHashMap<UUID, T> events;
+    protected final ConcurrentHashMap<UUID, T> events;
 
     public IdentifierRunner(final Properties properties) {
         this(new ConcurrentHashMap<>(512), properties);
@@ -27,13 +27,12 @@ public abstract class IdentifierRunner<T extends CombatEvent<?>, E extends Event
     /**
      * Handles an event, returns true if the event was handled and should not be handled by any other runners
      *
-     * @param uuid        The uuid of the entity
      * @param bukkitEvent The event
      * @return true if handled by this runner.
      */
     @BukkitApi
-    public boolean handle(@NotNull final UUID uuid, @NotNull final E bukkitEvent) {
-        final T event = events.get(uuid);
+    public boolean handle(@NotNull final E bukkitEvent) {
+        final T event = events.get(bukkitEvent.getEntity().getUniqueId());
         return event == null ? handleWithoutEvent(bukkitEvent) : handleWithEvent(event, bukkitEvent);
     }
 
@@ -74,5 +73,9 @@ public abstract class IdentifierRunner<T extends CombatEvent<?>, E extends Event
 
     public Optional<T> get(final UUID uuid) {
         return Optional.ofNullable(events.get(uuid));
+    }
+
+    public Optional<T> getAndRemove(final UUID uuid) {
+        return Optional.ofNullable(events.remove(uuid));
     }
 }

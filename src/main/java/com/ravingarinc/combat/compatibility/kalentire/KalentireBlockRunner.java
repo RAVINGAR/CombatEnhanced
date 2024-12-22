@@ -84,6 +84,7 @@ public class KalentireBlockRunner extends BlockRunner {
     }
 
     private void handlePostEvent(final EntityDamageByEntityEvent event, final Player defender, final double bonusFactor) {
+        handler.onDamageEvent(event);
         var damage = event.getDamage();
         final var meta = MythicLib.plugin.getDamage().findAttack(event);
         final var damageMeta = meta.getDamage();

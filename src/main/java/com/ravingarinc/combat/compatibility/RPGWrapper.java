@@ -4,6 +4,7 @@ import com.ravingarinc.combat.combat.CombatManager;
 import com.ravingarinc.combat.combat.runner.BlockRunner;
 import com.ravingarinc.combat.file.Properties;
 import org.bukkit.entity.Player;
+import org.bukkit.event.entity.EntityDamageEvent;
 
 public interface RPGWrapper {
 
@@ -53,4 +54,6 @@ public interface RPGWrapper {
     default void injectRunners(CombatManager manager) {
 
     }
+
+    default void onDamageEvent(EntityDamageEvent event) {}
 }
