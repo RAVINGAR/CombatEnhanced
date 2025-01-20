@@ -3,7 +3,6 @@ package com.ravingarinc.combat.compatibility.kalentire;
 import com.herocraftonline.heroes.Heroes;
 import com.herocraftonline.heroes.attributes.AttributeType;
 import com.herocraftonline.heroes.characters.Hero;
-import com.ravingarinc.api.I;
 import com.ravingarinc.api.module.RavinPlugin;
 import com.ravingarinc.combat.character.CharacterManager;
 import com.ravingarinc.combat.combat.CombatManager;
@@ -29,8 +28,6 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-
-import java.util.logging.Level;
 
 public class KalentireWrapper implements RPGWrapper, Listener {
     private final RavinPlugin plugin;
@@ -230,8 +227,6 @@ public class KalentireWrapper implements RPGWrapper, Listener {
             damage = MythicLib.plugin.getDamage().findAttack(event).getDamage().getDamage();
         }
         if(damage > 0.0) {
-            I.log(Level.WARNING, "Handling Poise on Damage Event, Event Damage = " + event.getDamage() + ", Metadata " +
-                    "Damage = " + damage);
             poiseRunner.handle(event, damage, source, impact);
         }
     }

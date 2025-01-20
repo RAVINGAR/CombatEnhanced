@@ -1,6 +1,5 @@
 package com.ravingarinc.combat.combat;
 
-import com.ravingarinc.api.I;
 import com.ravingarinc.api.module.Module;
 import com.ravingarinc.api.module.RavinPlugin;
 import com.ravingarinc.combat.api.BukkitApi;
@@ -24,7 +23,6 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.*;
-import java.util.logging.Level;
 
 /**
  * Manages combat interactions and computations. Any methods marked with AsyncHandler.Execute means that the method is
@@ -102,16 +100,12 @@ public class CombatManager extends Module {
 
     @BukkitApi
     public void handle(final EntityDamageByEntityEvent event) {
-        I.log(Level.WARNING, "Handling event!");
         if(!(event.getEntity() instanceof LivingEntity)) {
             return;
         }
-        I.log(Level.WARNING, "Handling event 2!");
         for(IdentifierRunner<?, EntityDamageByEntityEvent> runner : damageEventRunners) {
-            I.log(Level.WARNING, "CHECKING RUNNER!");
             if(runner.handle(event)) {
-                I.log(Level.WARNING, "HANDLER RETURNED TRUE !" + runner.getClass().getCanonicalName());
-                return; //
+                return;
             }
         }
         // Handle only if runner is not handled.
