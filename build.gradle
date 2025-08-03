@@ -69,8 +69,8 @@ repositories {
 dependencies {
     bukkitLibrary 'javax.vecmath:vecmath:1.5.2'
     compileOnly 'io.papermc.paper:paper-api:1.20.1-R0.1-SNAPSHOT'
-    compileOnly 'com.herocraftonline.heroes:Heroes:1.10.8-SNAPSHOT'
-    compileOnly 'net.Indyuce:MMOItems-API:6.9.5-SNAPSHOT'
+    compileOnly 'com.herocraftonline.heroes:Heroes:1.11.2-SNAPSHOT'
+    compileOnly 'net.Indyuce:MMOItems-API:6.10.1-SNAPSHOT'
     compileOnly 'io.lumine:MythicLib-dist:1.6.2-SNAPSHOT'
     compileOnly 'com.comphenix.protocol:ProtocolLib:5.1.0'
     compileOnly 'com.ravingarinc.kalentirerpg:Kalentire:1.20.1'
