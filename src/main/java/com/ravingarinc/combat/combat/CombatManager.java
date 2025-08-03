@@ -93,9 +93,11 @@ public class CombatManager extends Module {
         final long start = System.currentTimeMillis();
         lastDodges.put(entity.getUniqueId(), start);
         final Vector3 location = new Vector3(entity.getLocation());
-        scheduler.runTaskAsynchronously(plugin, () ->
-                characterManager.getCharacter(entity).ifPresent(character ->
-                        dodgeRunner.add(new DodgeEvent(character, location, start, properties, handler, defaultData))));
+        characterManager.getCharacter(entity).ifPresent(character -> {
+            scheduler.runTaskAsynchronously(plugin, () -> {
+                dodgeRunner.add(new DodgeEvent(character, location, start, properties, handler, defaultData));
+            });
+        });
     }
 
     @BukkitApi

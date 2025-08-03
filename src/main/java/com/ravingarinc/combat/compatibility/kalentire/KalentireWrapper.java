@@ -5,7 +5,6 @@ import com.herocraftonline.heroes.attributes.AttributeType;
 import com.herocraftonline.heroes.characters.Hero;
 import com.ravingarinc.api.module.RavinPlugin;
 import com.ravingarinc.combat.character.CharacterManager;
-import com.ravingarinc.combat.combat.CombatManager;
 import com.ravingarinc.combat.combat.runner.BlockRunner;
 import com.ravingarinc.combat.combat.runner.PoiseRunner;
 import com.ravingarinc.combat.compatibility.RPGWrapper;
@@ -264,10 +263,6 @@ public class KalentireWrapper implements RPGWrapper, Listener {
             final var proj = event.getProjectile();
             proj.setVelocity(proj.getVelocity().multiply(velocity));
         }
-    }
-
-    @Override
-    public void injectRunners(CombatManager manager) {
     }
 
     @Override

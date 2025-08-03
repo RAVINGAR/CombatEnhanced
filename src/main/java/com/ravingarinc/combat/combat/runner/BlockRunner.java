@@ -107,7 +107,7 @@ public class BlockRunner extends IdentifierRunner<PlayerBlockEvent, EntityDamage
 
         target.setHealth(newHealth);
         target.setAbsorptionAmount(newShield);
-        target.playEffect(EntityEffect.HURT);
+        target.playHurtAnimation(0.5F);
 
         // TODO Update this!
     }

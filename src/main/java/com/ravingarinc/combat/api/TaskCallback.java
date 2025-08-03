@@ -1,5 +1,6 @@
 package com.ravingarinc.combat.api;
 
+import com.ravingarinc.api.I;
 import com.ravingarinc.combat.CombatEnhanced;
 import org.jetbrains.annotations.Async;
 import org.jetbrains.annotations.Blocking;
@@ -35,7 +36,7 @@ public class TaskCallback<V> implements Runnable {
         try {
             semaphore.acquire();
         } catch (final InterruptedException e) {
-            throw new AsynchronousException("Acquiring semaphore was interrupted in task callback!", e);
+            I.log(Level.SEVERE, "Semaphore was interrupted during task callback!", e);
         }
     }
 
@@ -68,9 +69,7 @@ public class TaskCallback<V> implements Runnable {
         } finally {
             semaphore.release();
         }
-        if (exception.isPresent()) {
-            throw new AsynchronousException("Exception thrown during task callback!", exception.get());
-        }
+        exception.ifPresent(e -> I.log(Level.SEVERE, "Exception was thrown during execution of callback!", e));
         if (value == null) {
             throw new AsynchronousException("Value for task callback was not computed!");
         }

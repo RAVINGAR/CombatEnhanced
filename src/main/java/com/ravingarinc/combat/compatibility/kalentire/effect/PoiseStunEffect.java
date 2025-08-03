@@ -11,6 +11,7 @@ import com.herocraftonline.heroes.characters.Monster;
 import com.herocraftonline.heroes.characters.effects.Effect;
 import com.herocraftonline.heroes.characters.effects.EffectType;
 import com.herocraftonline.heroes.characters.effects.PeriodicExpirableEffect;
+import com.herocraftonline.heroes.nms.api.FriendlyPotionType;
 import com.ravingarinc.api.module.RavinPlugin;
 import com.ravingarinc.combat.file.Properties;
 import org.bukkit.*;
@@ -20,8 +21,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
 import org.jetbrains.annotations.Nullable;
 
 public class PoiseStunEffect extends PeriodicExpirableEffect {
@@ -53,7 +52,7 @@ public class PoiseStunEffect extends PeriodicExpirableEffect {
         this.types.add(EffectType.DISABLE);
         this.types.add(EffectType.STAMINA_REGEN_FREEZING);
         this.types.add(EffectType.MANA_REGEN_FREEZING);
-        this.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, (int)(20L * duration / 1000L), 127));
+        addPotionType(FriendlyPotionType.SLOWNESS, 127);
         //this.addPotionEffect(new PotionEffect(PotionEffectType.JUMP, (int)(20L * duration / 1000L), 127));
     }
 

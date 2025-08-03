@@ -6,7 +6,6 @@ import com.ravingarinc.api.module.RavinPlugin;
 import com.ravingarinc.combat.character.CharacterManager;
 import com.ravingarinc.combat.compatibility.RPGHandler;
 import com.ravingarinc.combat.compatibility.RPGWrapper;
-import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -70,9 +69,7 @@ public class CombatListener extends ModuleListener {
         if(event.isSneaking()) {
             if(lastTime == null || lastTime + 2000 < currentTime) {
                 lastSneaking.put(uuid, currentTime);
-                Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
-                    tryDodge(player);
-                });
+                tryDodge(player);
             }
         } else {
             if(lastTime == null) {
@@ -100,7 +97,7 @@ public class CombatListener extends ModuleListener {
         }
     }
 
-    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGH)
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void onDamageEvent(final EntityDamageByEntityEvent event) {
         manager.handle(event);
     }

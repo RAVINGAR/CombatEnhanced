@@ -7,8 +7,10 @@ import com.ravingarinc.combat.combat.runner.BlockRunner;
 import com.ravingarinc.combat.compatibility.RPGWrapper;
 import com.ravingarinc.combat.compatibility.kalentire.effect.PoiseStunEffect;
 import com.ravingarinc.kalentirerpg.damage.type.DamageType;
+import com.ravingarinc.kalentirerpg.item.stats.Stat;
 import io.lumine.mythic.lib.MythicLib;
 import io.lumine.mythic.lib.api.player.MMOPlayerData;
+import io.lumine.mythic.lib.damage.DamagePacket;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -30,7 +32,7 @@ public class KalentireBlockRunner extends BlockRunner {
         if (defender.isBlocking() && properties.blockDamageCauses.contains(event.getCause())) {
             final int requiredStamina = getRequiredStamina(defender, event) / 2;
             if (handler.tryRemoveStamina(defender, requiredStamina)) {
-                defender.sendMessage(ChatColor.RED + "< You blocked the attack! >");
+                defender.sendMessage(ChatColor.RED + "< You perfectly blocked the attack! >");
                 defender.playSound(defender, Sound.ENTITY_ARROW_HIT_PLAYER, 1.0F, 1.0F);
                 defender.getWorld().playSound(defender, Sound.ITEM_SHIELD_BLOCK, 1.0F, 1.0F);
 
@@ -45,7 +47,7 @@ public class KalentireBlockRunner extends BlockRunner {
                 }
                 handlePostEvent(event, defender, KalentireWrapper.getPerfectBlockBonus(defender));
             } else {
-                throwEntity(event.getDamager(), defender, properties.blockThrowStrength);
+                throwEntity(event.getDamager(), defender, properties.blockThrowStrength / 2.0F);
                 defender.playHurtAnimation(0);
                 handlePostEvent(event, defender, 1.0);
                 final var hero = manager.getHero(defender);
@@ -76,7 +78,7 @@ public class KalentireBlockRunner extends BlockRunner {
                     defender.playSound(defender, Sound.ITEM_SHIELD_BREAK, 1.0F, 1.0F);
                     defender.setCooldown(Material.SHIELD, (int) handler.getShieldCooldown(defender));
                 }
-                throwEntity(event.getDamager(), defender, properties.blockThrowStrength);
+                throwEntity(event.getDamager(), defender, properties.blockThrowStrength / 2.0F);
                 return true;
             }
         }
@@ -85,29 +87,42 @@ public class KalentireBlockRunner extends BlockRunner {
 
     private void handlePostEvent(final EntityDamageByEntityEvent event, final Player defender, final double bonusFactor) {
         handler.onDamageEvent(event);
-        var damage = event.getDamage();
         final var meta = MythicLib.plugin.getDamage().findAttack(event);
         final var damageMeta = meta.getDamage();
-        final var elements = damageMeta.collectElements();
         final var statMap = MMOPlayerData.get(defender).getStatMap();
-        elements.forEach((element) -> {
+
+        // Todo maybe move this to Kalentire Plugin in some way shape or form idk.
+
+        final var attacker = meta.getAttacker();
+        final var penetration = attacker == null ? 0.0 : attacker.getStat(Stat.PENETRATION.mmoKey());
+        final var percentilePen = attacker == null ? 0.0 : attacker.getStat(Stat.PERCENTILE_PENETRATION.mmoKey());
+
+        for(DamagePacket packet : damageMeta.getPackets()) {
+            final var element = packet.getElement();
+            if(element == null) continue;
             final var type = DamageType.fromMythicElement(element);
             final var parent = type.getParent();
             var bonusNegation = 0.0;
             var bonusResistance = 0.0;
             if(!type.equals(parent)) {
-                bonusNegation = statMap.getStat(parent.negation() + "_SHIELD");
-                bonusResistance = statMap.getStat(parent.resistance() + "_SHIELD");
+                bonusNegation = statMap.getStat(parent.shieldNegation().mmoKey());
+                bonusResistance = statMap.getStat(parent.shieldResistance().mmoKey());
             }
-            final var negation = statMap.getStat(type.negation() + "_SHIELD") + bonusNegation;
+            final var negation = (statMap.getStat(type.shieldNegation().mmoKey()) + bonusNegation) * bonusFactor;
+            final var resistance = (statMap.getStat(type.shieldResistance().mmoKey()) + bonusResistance) * bonusFactor;
             if(negation != 0) {
-                damageMeta.add(-bonusFactor * negation, element);
+                final var fNegation = negation > 0.0 && penetration != 0.0
+                        ? -1 * Math.max(0.0, negation - penetration)
+                        : -1 * negation;
+                packet.setValue(Math.max(0.0, packet.getValue() + fNegation));
             }
-            final var resistance = statMap.getStat(type.resistance() + "_SHIELD") + bonusResistance;
-            if(resistance != 0) {
-                damageMeta.multiplicativeModifier(1.0 - (bonusFactor * resistance), element);
+            if (resistance != 0.0) {
+                packet.multiplicativeModifier(1.0 - (resistance - percentilePen));
             }
-        });
-        damageEntity(defender, damage);
+            if(packet.hasType(io.lumine.mythic.lib.damage.DamageType.PROJECTILE)) {
+                packet.multiplicativeModifier((statMap.getStat(Stat.SHIELD_BONUS.mmoKey())));
+            }
+        }
+        event.setDamage(damageMeta.getDamage());
     }
 }
