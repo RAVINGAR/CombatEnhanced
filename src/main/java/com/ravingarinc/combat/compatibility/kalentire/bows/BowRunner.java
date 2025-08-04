@@ -1,8 +1,9 @@
-package com.ravingarinc.combat.compatibility.kalentire;
+package com.ravingarinc.combat.compatibility.kalentire.bows;
 
 import com.herocraftonline.heroes.Heroes;
 import com.herocraftonline.heroes.nms.NMSHandler;
 import com.ravingarinc.api.I;
+import com.ravingarinc.combat.compatibility.kalentire.KalentireWrapper;
 import com.ravingarinc.kalentirerpg.item.stats.Stat;
 import com.ravingarinc.kalentirerpg.item.stats.type.Arrow;
 import io.lumine.mythic.lib.MythicLib;
@@ -66,7 +67,7 @@ public class BowRunner extends BukkitRunnable {
         if(distanceSq > rangeSq) {
             rawDamage =
                     Math.max(0.0,
-                            rawDamage * (1.0 + ((Math.sqrt(distanceSq) - shot.fallOffRange()) * shot.fallOffReduction())));
+                            rawDamage * (1.0 + ((Math.sqrt(distanceSq) - shot.fallOffRange()) * KalentireWrapper.FALL_OFF_REDUCTION)));
         }
         final var metadata = MythicLib.plugin.getDamage().findAttack(event);
         //metadata.getDamage().getInitialPacket().setValue(0.0);
@@ -80,18 +81,18 @@ public class BowRunner extends BukkitRunnable {
             final var heroesCharacter = Heroes.getInstance().getCharacterManager().getCharacter(defender);
             shot.effects().forEach(heroesCharacter::addEffect);
         }
+        // todo add crit damage somewhere here.
         event.setDamage(rawDamage);
         wrapper.getPoiseRunner().handle(event, rawDamage, (Entity)((AbstractArrow)event.getDamager()).getShooter(),
                 shot.impact());
     }
 
 
-    public void add(UUID uuid, Location origin,  PlayerMetadata statMap, NBTItem consumable,
-                    float force) {
+    public void add(UUID uuid, Location origin,  PlayerMetadata statMap, NBTItem consumable, double multiplier) {
         // We override this such that the event is added before it is computed.
         final var future = new CompletableFuture<ShootEvent>();
         cache.put(uuid, future);
-        final Runnable runnable = () -> future.complete(compute(origin, statMap, consumable, force));
+        final Runnable runnable = () -> future.complete(compute(origin, statMap, consumable, multiplier));
         try {
             queue.put(runnable);
         } catch(InterruptedException e) {
@@ -100,8 +101,7 @@ public class BowRunner extends BukkitRunnable {
     }
 
     private static ShootEvent compute(Location origin, PlayerMetadata statMap,
-                                 NBTItem consumable,
-                                float force) {
+                                 NBTItem consumable, double multiplier) {
         final var damage = statMap.getStat(KalentireWrapper.RANGED_DAMAGE);
 
         final var type = Arrow.Type.valueOf(consumable.getString("MMOITEMS_ARROW_TYPE"));
@@ -110,22 +110,21 @@ public class BowRunner extends BukkitRunnable {
                 consumable.getDouble("MMOITEMS_" + damageType.damage().mmoKey());
 
         // use type.getEffect() to add effects and such
-        final var multiplier = force == 1.0F ? 1.0F + statMap.getStat(KalentireWrapper.FULL_DRAW_BONUS) : force;
         // TODO Consider imbuements effects
-        final var impact =
-                statMap.getStat(KalentireWrapper.IMPACT) + consumable.getDouble("MMOITEMS_" + KalentireWrapper.IMPACT);
-        final var penetration = statMap.getStat("KALENTIRE_PENETRATION") + consumable.getDouble(
-                "MMOITEMS_KALENTIRE_PENETRATION");
-        final var knockback =
-                statMap.getStat(KalentireWrapper.KNOCKBACK) + consumable.getDouble("MMOITEMS_" + KalentireWrapper.KNOCKBACK);
-        final var fallOffRange =
-                statMap.getStat(KalentireWrapper.FALL_OFF_RANGE) + consumable.getDouble("MMOITEMS_" + KalentireWrapper.FALL_OFF_RANGE);
-        final var fallOffReduction = statMap.getStat(KalentireWrapper.FALL_OFF_REDUCTION);
+
+        final var impact = getStat(statMap, consumable, KalentireWrapper.IMPACT) * multiplier;
+        final var penetration = getStat(statMap, consumable, (KalentireWrapper.PENETRATION))  * multiplier;
+        final var knockback = getStat(statMap, consumable, (KalentireWrapper.KNOCKBACK)) * multiplier;
+        final var fallOffRange = getStat(statMap, consumable, (KalentireWrapper.FALL_OFF_RANGE));
 
         return new ShootEvent(origin, damageType, (damage + arrowDamage) * multiplier, impact * multiplier,
                 penetration * multiplier,
                 knockback,
-                fallOffRange, fallOffReduction, multiplier, new HashSet<>());
+                fallOffRange, multiplier, new HashSet<>());
+    }
+
+    private static double getStat(PlayerMetadata stats, NBTItem consumable, String stat) {
+        return stats.getStat(stat) + consumable.getStat(stat);
     }
 
     @Override

@@ -1,4 +1,4 @@
-package com.ravingarinc.combat.compatibility.kalentire;
+package com.ravingarinc.combat.compatibility.kalentire.bows;
 
 import com.herocraftonline.heroes.characters.effects.Effect;
 import com.ravingarinc.kalentirerpg.damage.type.Damage;
@@ -10,7 +10,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collection;
 
 public record ShootEvent(Location origin, Damage damageType, double damage, double impact, double penetration,
-                         double knockback, double fallOffRange, double fallOffReduction, double force,
+                         double knockback, double fallOffRange, double force,
                          Collection<Effect> effects) {
     public enum Category {
         BOW(Material.BOW), CROSSBOW(Material.CROSSBOW);

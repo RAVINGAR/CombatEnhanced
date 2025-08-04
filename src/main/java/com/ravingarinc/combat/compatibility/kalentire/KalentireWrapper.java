@@ -8,6 +8,10 @@ import com.ravingarinc.combat.character.CharacterManager;
 import com.ravingarinc.combat.combat.runner.BlockRunner;
 import com.ravingarinc.combat.combat.runner.PoiseRunner;
 import com.ravingarinc.combat.compatibility.RPGWrapper;
+import com.ravingarinc.combat.compatibility.kalentire.bows.AimingEffect;
+import com.ravingarinc.combat.compatibility.kalentire.bows.BowRunner;
+import com.ravingarinc.combat.compatibility.kalentire.bows.PerfectAimEffect;
+import com.ravingarinc.combat.compatibility.kalentire.bows.ShootEvent;
 import com.ravingarinc.combat.compatibility.kalentire.effect.PoiseStunEffect;
 import com.ravingarinc.combat.file.Properties;
 import io.lumine.mythic.bukkit.MythicBukkit;
@@ -15,18 +19,30 @@ import io.lumine.mythic.lib.MythicLib;
 import io.lumine.mythic.lib.api.item.NBTItem;
 import io.lumine.mythic.lib.api.player.EquipmentSlot;
 import io.lumine.mythic.lib.api.player.MMOPlayerData;
+import io.lumine.mythic.lib.player.PlayerMetadata;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Material;
+import org.bukkit.Sound;
+import org.bukkit.SoundCategory;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.HandlerList;
-import org.bukkit.event.Listener;
+import org.bukkit.event.*;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityShootBowEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
+import org.bukkit.inventory.meta.CrossbowMeta;
+import org.bukkit.util.Vector;
+
+import java.util.Random;
 
 public class KalentireWrapper implements RPGWrapper, Listener {
     private final RavinPlugin plugin;
@@ -46,6 +62,10 @@ public class KalentireWrapper implements RPGWrapper, Listener {
 
     public static final String IMPACT = "IMPACT";
 
+    public static final String PENETRATION = "KALENTIRE_PENETRATION";
+
+    public static final String PERCENT_PENETRATION = "KALENTIRE_PERCENTILE_PENETRATION";
+
     public static final String STAMINA_DRAIN = "HEROES_STAMINA_DRAIN";
 
     public static final String BLOCK_RECOVERY = "BLOCK_RECOVERY";
@@ -54,18 +74,27 @@ public class KalentireWrapper implements RPGWrapper, Listener {
 
     public static final String BLOCK_BUFFER = "BLOCK_BUFFER";
 
-    public static final String FALL_OFF_REDUCTION = "FALL_OFF_REDUCTION";
+    public static final String RANGED_DAMAGE = "RANGED_DAMAGE";
+
     public static final String FALL_OFF_RANGE = "FALL_OFF_RANGE";
 
-    public static final String DRAW_SPEED = "DRAW_SPEED";
+    public static final double FALL_OFF_REDUCTION = 0.05; // % damage reduction per block out of range.
 
-    public static final String FULL_DRAW_BONUS = "FULL_DRAW_BONUS";
+    public static final String DRAW_STAMINA = "DRAW_STAMINA"; // per second, exeute divided by 5
+
+    public static final String AIM_STAMINA = "AIM_STAMINA";
+
+    public static final String AIM_BONUS = "AIM_BONUS";
+
+    public static final String AIM_TIME = "AIM_TIME";
 
     public static final String VELOCITY = "VELOCITY";
 
-    public static final String RANGED_DAMAGE = "RANGED_MULTIPLIER";
+    public static final String SWAY = "SWAY";
 
     public static final String KNOCKBACK = "HEROES_KNOCKBACK";
+
+    private final Random random = new Random(System.currentTimeMillis());
 
     public KalentireWrapper(final RavinPlugin plugin) {
         this.plugin = plugin;
@@ -192,6 +221,9 @@ public class KalentireWrapper implements RPGWrapper, Listener {
     }
 
     private static double getImpactForPlayer(Player player) {
+        if(player.getAttackCooldown() != 1.0) {
+            return 0.0; // todo test if this is right
+        }
         return MMOPlayerData.get(player.getUniqueId()).getStatMap().getStat(KalentireWrapper.IMPACT);
     }
 
@@ -202,6 +234,9 @@ public class KalentireWrapper implements RPGWrapper, Listener {
     }
 
 
+    private static double getStat(PlayerMetadata stats, NBTItem consumable, String stat) {
+        return stats.getStat(stat) + consumable.getStat(stat);
+    }
     /**
      * Handles event before armour mitigiation is considered.
      * @param event
@@ -236,12 +271,100 @@ public class KalentireWrapper implements RPGWrapper, Listener {
 
     @EventHandler
     public void onDeathEvent(final EntityDeathEvent event) {
-        poiseRunner.removeAll(event.getEntity().getUniqueId());
+        final var uuid = event.getEntity().getUniqueId();
+        poiseRunner.removeAll(uuid);
+        if(event.getEntity() instanceof Player player) {
+            onPlayerStopAiming(player);
+        }
+
     }
 
     @EventHandler
     public void onQuitEvent(final PlayerQuitEvent event) {
-        poiseRunner.removeAll(event.getPlayer().getUniqueId());
+        final var uuid = event.getPlayer().getUniqueId();
+        poiseRunner.removeAll(uuid);
+        onPlayerStopAiming(event.getPlayer());
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPlayerInteractEvent(final PlayerInteractEvent event) {
+        if(event.useItemInHand() == Event.Result.DENY) {
+            return;
+        }
+        if(event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+            onRightClickEvent(event);
+        } else if (event.getAction() == Action.LEFT_CLICK_AIR || event.getAction() == Action.LEFT_CLICK_BLOCK) {
+            onLeftClickEvent(event);
+        }
+    }
+
+    /**
+     * Called for right clicking and holding a bow.
+     * @param event
+     */
+    private void onRightClickEvent(final PlayerInteractEvent event) {
+        final var player = event.getPlayer();
+        final var mainHand = player.getInventory().getItemInMainHand();
+        final var offhand = player.getInventory().getItemInOffHand();
+        if(mainHand.getType() == Material.BOW) {
+            if(!offhand.getType().isEmpty()) {
+                player.sendMessage(Component.text("You are unable to use this item with only one-hand!", NamedTextColor.RED));
+                event.setUseItemInHand(Event.Result.DENY);
+                return;
+            }
+            final var effect = new AimingEffect(player, NBTItem.get(mainHand));
+            Heroes.getInstance().getCharacterManager().getHero(player).addEffect(effect);
+        }
+
+        if(offhand.getType() == Material.BOW || offhand.getType() == Material.CROSSBOW) {
+            event.setUseItemInHand(Event.Result.DENY);
+        }
+    }
+
+    /**
+     * Called for left clicking a crossbow to toggle the aiming effect.
+     * @param event
+     */
+    private void onLeftClickEvent(final PlayerInteractEvent event) {
+        final var player = event.getPlayer();
+        final var mainHand = player.getInventory().getItemInMainHand();
+        final var offhand = player.getInventory().getItemInOffHand();
+
+        if(mainHand.getItemMeta() instanceof CrossbowMeta meta && meta.hasChargedProjectiles()) {
+            if(!offhand.getType().isEmpty()) {
+                player.sendMessage(Component.text("You are unable to use this item with only one-hand!", NamedTextColor.RED));
+                event.setUseItemInHand(Event.Result.DENY);
+                return;
+            }
+            final var hero = Heroes.getInstance().getCharacterManager().getHero(player);
+            if(hero.hasEffect(AimingEffect.NAME)) {
+                hero.tryRemoveEffect(AimingEffect.NAME);
+                player.sendMessage(Component.text("< You are no longer readying your crossbow! >", NamedTextColor.RED));
+            } else if(hero.hasEffect(PerfectAimEffect.NAME)) {
+                hero.tryRemoveEffect(PerfectAimEffect.NAME);
+                player.sendMessage(Component.text("< You are no longer readying your crossbow! >", NamedTextColor.RED));
+            } else {
+                player.sendMessage(Component.text("< You are readying your crossbow! >", NamedTextColor.RED));
+                player.playSound(player, Sound.ITEM_CROSSBOW_LOADING_START, SoundCategory.PLAYERS, 0.5F, 1.0F);
+                final var effect = new AimingEffect(player, NBTItem.get(mainHand));
+                hero.addEffect(effect);
+            }
+        }
+    }
+
+    public void onPlayerStopAiming(Player player) {
+        final var hero = Heroes.getInstance().getCharacterManager().getHero(player);
+        hero.tryRemoveEffect("KalentireAimingEffect");
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPlayerDropItemEvent(final PlayerDropItemEvent event) {
+        onPlayerStopAiming(event.getPlayer());
+    }
+
+    @EventHandler
+    public void onPlayerSwapHandsEvent(final PlayerSwapHandItemsEvent event) {
+        onPlayerStopAiming(event.getPlayer());
     }
 
     @EventHandler
@@ -251,18 +374,66 @@ public class KalentireWrapper implements RPGWrapper, Listener {
             final var category = ShootEvent.Category.matchCategory(event.getBow());
             if(category == null) return;
 
-            final var statMap = MMOPlayerData.get(player).getStatMap().cache(EquipmentSlot.MAIN_HAND); // todo do we cache
-            // here?
+            final var bow = NBTItem.get(event.getBow());
+            if(!bow.hasType()) return;
+
             final var consumable = NBTItem.get(consumed);
             if(!consumable.hasType()) return;
 
+            final var statMap = MMOPlayerData.get(player).getStatMap().cache(EquipmentSlot.MAIN_HAND);
+
+            final var bowType = bow.getType();
+
+            final var hero =  Heroes.getInstance().getCharacterManager().getHero(player);
+            final var effect = (PerfectAimEffect) hero.getEffect(PerfectAimEffect.NAME);
+
+            double multiplier = event.getForce();
+            double sway = getStat(statMap, consumable, KalentireWrapper.SWAY);
+            if(effect != null) {
+                multiplier += getStat(statMap, consumable, KalentireWrapper.AIM_BONUS);
+                if (bowType.equalsIgnoreCase("GREATBOW") || bowType.equalsIgnoreCase("SIEGE_CROSSBOW")) {
+                    sway = 0.0;
+                } else {
+                    sway /= 2.0;
+                }
+            }
+            hero.tryRemoveEffect(AimingEffect.NAME);
+            hero.tryRemoveEffect(PerfectAimEffect.NAME);
+
             bowRunner.add(player.getUniqueId(), player.getLocation(), statMap,
-                    consumable, event.getForce());
-            final var velocity =
-                    (statMap.getStat(KalentireWrapper.VELOCITY) + consumable.getDouble(KalentireWrapper.VELOCITY));
+                    consumable, multiplier);
+
             final var proj = event.getProjectile();
-            proj.setVelocity(proj.getVelocity().multiply(velocity));
+            final var velocity = getStat(statMap, consumable, KalentireWrapper.VELOCITY) * multiplier;
+
+            proj.setVelocity(randomiseVelocity(proj.getVelocity(), sway, velocity));
         }
+    }
+
+        /**
+         * Randomizes a velocity vector to create a "spread" effect.
+         *
+         * @param initialVelocity The starting velocity vector of the projectile.
+         * @param spreadFactor A value controlling the spread cone. 0 is no spread.
+         * Good values are typically between 0.05 and 0.5.
+         * @return A new velocity vector with a randomized direction.
+         */
+    public Vector randomiseVelocity(Vector initialVelocity, double spreadFactor, double speed) {
+        // 1. Get the original speed and direction
+        Vector direction = initialVelocity.normalize();
+
+        // 2. & 3. Generate a random offset vector scaled by the spread factor
+        // Generates random values between -1 and 1
+        double offsetX = (random.nextDouble() * 2 - 1) * spreadFactor;
+        double offsetY = (random.nextDouble() * 2 - 1) * spreadFactor;
+        double offsetZ = (random.nextDouble() * 2 - 1) * spreadFactor;
+        Vector randomOffset = new Vector(offsetX, offsetY, offsetZ);
+
+        // 4. Combine the original direction with the random offset and re-normalize
+        Vector newDirection = direction.add(randomOffset).normalize();
+
+        // 5. Apply the original speed to the new direction
+        return newDirection.multiply(speed);
     }
 
     @Override
