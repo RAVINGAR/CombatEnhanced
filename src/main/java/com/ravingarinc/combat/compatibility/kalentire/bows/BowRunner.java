@@ -102,7 +102,7 @@ public class BowRunner extends BukkitRunnable {
 
     private static ShootEvent compute(Location origin, PlayerMetadata statMap,
                                  NBTItem consumable, double multiplier) {
-        final var damage = statMap.getStat(KalentireWrapper.RANGED_DAMAGE);
+        final var damage = statMap.getStat(Stat.RANGED_DAMAGE.mmoKey());
 
         final var type = Arrow.Type.valueOf(consumable.getString("MMOITEMS_ARROW_TYPE"));
         final var damageType = type.get(Stat.DAMAGE_TYPE);
@@ -112,10 +112,10 @@ public class BowRunner extends BukkitRunnable {
         // use type.getEffect() to add effects and such
         // TODO Consider imbuements effects
 
-        final var impact = getStat(statMap, consumable, KalentireWrapper.IMPACT) * multiplier;
-        final var penetration = getStat(statMap, consumable, (KalentireWrapper.PENETRATION))  * multiplier;
-        final var knockback = getStat(statMap, consumable, (KalentireWrapper.KNOCKBACK)) * multiplier;
-        final var fallOffRange = getStat(statMap, consumable, (KalentireWrapper.FALL_OFF_RANGE));
+        final var impact = getStat(statMap, consumable, Stat.IMPACT.mmoKey()) * multiplier;
+        final var penetration = getStat(statMap, consumable, (Stat.PENETRATION.mmoKey()))  * multiplier;
+        final var knockback = getStat(statMap, consumable, (Stat.KNOCKBACK.mmoKey())) * multiplier;
+        final var fallOffRange = getStat(statMap, consumable, (Stat.FALL_OFF_RANGE.mmoKey()));
 
         return new ShootEvent(origin, damageType, (damage + arrowDamage) * multiplier, impact * multiplier,
                 penetration * multiplier,

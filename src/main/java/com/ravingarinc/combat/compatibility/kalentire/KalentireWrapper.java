@@ -14,8 +14,8 @@ import com.ravingarinc.combat.compatibility.kalentire.bows.PerfectAimEffect;
 import com.ravingarinc.combat.compatibility.kalentire.bows.ShootEvent;
 import com.ravingarinc.combat.compatibility.kalentire.effect.PoiseStunEffect;
 import com.ravingarinc.combat.file.Properties;
+import com.ravingarinc.kalentirerpg.item.stats.Stat;
 import io.lumine.mythic.bukkit.MythicBukkit;
-import io.lumine.mythic.lib.MythicLib;
 import io.lumine.mythic.lib.api.item.NBTItem;
 import io.lumine.mythic.lib.api.player.EquipmentSlot;
 import io.lumine.mythic.lib.api.player.MMOPlayerData;
@@ -25,7 +25,6 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
@@ -55,44 +54,8 @@ public class KalentireWrapper implements RPGWrapper, Listener {
 
     private BowRunner bowRunner = null;
 
-    // This should mirror Kalentire API
-    public static final String DODGE_TICKS = "DODGE_TICKS";
-
-    public static final String POISE = "POISE";
-
-    public static final String IMPACT = "IMPACT";
-
-    public static final String PENETRATION = "KALENTIRE_PENETRATION";
-
-    public static final String PERCENT_PENETRATION = "KALENTIRE_PERCENTILE_PENETRATION";
-
-    public static final String STAMINA_DRAIN = "HEROES_STAMINA_DRAIN";
-
-    public static final String BLOCK_RECOVERY = "BLOCK_RECOVERY";
-
-    public static final String PERFECT_BLOCK_BONUS = "PERFECT_BLOCK_BONUS";
-
-    public static final String BLOCK_BUFFER = "BLOCK_BUFFER";
-
-    public static final String RANGED_DAMAGE = "RANGED_DAMAGE";
-
-    public static final String FALL_OFF_RANGE = "FALL_OFF_RANGE";
 
     public static final double FALL_OFF_REDUCTION = 0.05; // % damage reduction per block out of range.
-
-    public static final String DRAW_STAMINA = "DRAW_STAMINA"; // per second, exeute divided by 5
-
-    public static final String AIM_STAMINA = "AIM_STAMINA";
-
-    public static final String AIM_BONUS = "AIM_BONUS";
-
-    public static final String AIM_TIME = "AIM_TIME";
-
-    public static final String VELOCITY = "VELOCITY";
-
-    public static final String SWAY = "SWAY";
-
-    public static final String KNOCKBACK = "HEROES_KNOCKBACK";
 
     private final Random random = new Random(System.currentTimeMillis());
 
@@ -153,7 +116,7 @@ public class KalentireWrapper implements RPGWrapper, Listener {
 
     @Override
     public long getDodgeDuration(Player player) {
-        return settings.dodgeDuration + (long) Math.floor(MMOPlayerData.get(player).getStatMap().getStat(DODGE_TICKS) * 50.0);
+        return settings.dodgeDuration + (long) Math.floor(MMOPlayerData.get(player).getStatMap().getStat(Stat.DODGE_TICKS.mmoKey()) * 50.0);
     }
 
     @Override
@@ -165,13 +128,14 @@ public class KalentireWrapper implements RPGWrapper, Listener {
     @Override
     public long getShieldCooldown(final Player player) {
         final var data = MMOPlayerData.get(player);
-        return (int) data.getStatMap().getStat(BLOCK_RECOVERY) / 50L;
+        return (int) data.getStatMap().getStat(Stat.BLOCK_RECOVERY.mmoKey()) / 50L;
     }
 
     public static double getPerfectBlockBonus(final Player player) {
-        return MMOPlayerData.get(player).getStatMap().getStat(PERFECT_BLOCK_BONUS);
+        return MMOPlayerData.get(player).getStatMap().getStat(Stat.PERFECT_BLOCK_BONUS.mmoKey());
     }
 
+    // Same as dealing 'impact damage'
     public void addPoiseDamage(final LivingEntity target, final double poiseDamage) {
         characterManager.getCharacter(target).ifPresent(character -> {
             this.poiseRunner.addPoiseDamage(character, poiseDamage);
@@ -196,9 +160,9 @@ public class KalentireWrapper implements RPGWrapper, Listener {
         final var data = MMOPlayerData.getOrNull(player.getUniqueId());
         if(data == null) return 0.0;
         final var stats = data.getStatMap();
-        var basePoise = stats.getStat(POISE);
+        var basePoise = stats.getStat(Stat.POISE.mmoKey());
         if(player.isBlocking()) {
-            basePoise += stats.getStat(BLOCK_BUFFER);
+            basePoise += stats.getStat(Stat.POISE_BUFFER.mmoKey());
         }
         return basePoise;
     }
@@ -224,7 +188,7 @@ public class KalentireWrapper implements RPGWrapper, Listener {
         if(player.getAttackCooldown() != 1.0) {
             return 0.0; // todo test if this is right
         }
-        return MMOPlayerData.get(player.getUniqueId()).getStatMap().getStat(KalentireWrapper.IMPACT);
+        return MMOPlayerData.get(player.getUniqueId()).getStatMap().getStat(Stat.IMPACT.mmoKey());
     }
 
     private static double getImpactForMonster(Monster monster) {
@@ -243,25 +207,12 @@ public class KalentireWrapper implements RPGWrapper, Listener {
      */
     @Override
     public void onDamageEvent(final EntityDamageEvent event) {
-
-
-        double damage = event.getDamage();
-        double impact = 0.0;
-        Entity source = null;
         if(event instanceof EntityDamageByEntityEvent castEvent) {
             if(bowRunner.handle(castEvent)) {
                 // This returns true and therefore does not consider poise calculations as the bow runner should
                 // handle it itself.
                 return;
             }
-            if(castEvent.getDamager() instanceof LivingEntity entity) {
-                impact = KalentireWrapper.getImpact(entity);
-                source = entity;
-            }
-            damage = MythicLib.plugin.getDamage().findAttack(event).getDamage().getDamage();
-        }
-        if(damage > 0.0) {
-            poiseRunner.handle(event, damage, source, impact);
         }
     }
 
@@ -388,9 +339,9 @@ public class KalentireWrapper implements RPGWrapper, Listener {
             final var effect = (PerfectAimEffect) hero.getEffect(PerfectAimEffect.NAME);
 
             double multiplier = event.getForce();
-            double sway = getStat(statMap, consumable, KalentireWrapper.SWAY);
+            double sway = getStat(statMap, consumable, Stat.AIM_SWAY.mmoKey());
             if(effect != null) {
-                multiplier += getStat(statMap, consumable, KalentireWrapper.AIM_BONUS);
+                multiplier += getStat(statMap, consumable, Stat.AIM_BONUS.mmoKey());
                 if (bowType.equalsIgnoreCase("GREATBOW") || bowType.equalsIgnoreCase("SIEGE_CROSSBOW")) {
                     sway = 0.0;
                 } else {
@@ -404,7 +355,7 @@ public class KalentireWrapper implements RPGWrapper, Listener {
                     consumable, multiplier);
 
             final var proj = event.getProjectile();
-            final var velocity = getStat(statMap, consumable, KalentireWrapper.VELOCITY) * multiplier;
+            final var velocity = getStat(statMap, consumable, Stat.VELOCITY.mmoKey()) * multiplier;
 
             proj.setVelocity(randomiseVelocity(proj.getVelocity(), sway, velocity));
         }

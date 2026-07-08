@@ -96,7 +96,8 @@ public class PoiseRunner extends BukkitRunnable {
                     source,
                     Math.min(settings.minStunDuration + (int)(damageOverPoise / settings.stunThreshold) * settings.stunDurationPerThreshold, settings.maxStunDuration),
                     settings.stunCooldown,
-                    damageOverPoise * settings.vulnerabilityPerPoise);
+                    damageOverPoise * settings.vulnerabilityPerPoise,
+                    settings.bonusVulnerability);
             Bukkit.getScheduler().runTask(plugin, () -> character.addEffect(effect));
         });
     }

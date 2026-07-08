@@ -3,17 +3,22 @@ package com.ravingarinc.combat.compatibility.kalentire.effect;
 import com.destroystokyo.paper.event.player.PlayerJumpEvent;
 import com.google.common.util.concurrent.AtomicDouble;
 import com.herocraftonline.heroes.Heroes;
-import com.herocraftonline.heroes.api.events.HeroesDamageEvent;
 import com.herocraftonline.heroes.characters.CharacterManager;
 import com.herocraftonline.heroes.characters.CharacterTemplate;
 import com.herocraftonline.heroes.characters.Hero;
 import com.herocraftonline.heroes.characters.Monster;
-import com.herocraftonline.heroes.characters.effects.Effect;
 import com.herocraftonline.heroes.characters.effects.EffectType;
 import com.herocraftonline.heroes.characters.effects.PeriodicExpirableEffect;
 import com.herocraftonline.heroes.nms.api.FriendlyPotionType;
 import com.ravingarinc.api.module.RavinPlugin;
+import com.ravingarinc.combat.CombatEnhanced;
+import com.ravingarinc.combat.compatibility.RPGHandler;
+import com.ravingarinc.combat.compatibility.kalentire.KalentireWrapper;
 import com.ravingarinc.combat.file.Properties;
+import com.ravingarinc.kalentirerpg.item.stats.Stat;
+import com.ravingarinc.kalentirerpg.progression.event.EventBus;
+import io.lumine.mythic.lib.api.event.AttackEvent;
+import io.lumine.mythic.lib.damage.DamagePacket;
 import org.bukkit.*;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
@@ -41,11 +46,13 @@ public class PoiseStunEffect extends PeriodicExpirableEffect {
     private final long cooldown;
     private final @Nullable Entity applierEntity;
     private final AtomicDouble bonusVulnerability = new AtomicDouble(0);
-    public PoiseStunEffect(@Nullable Entity applierEntity, long duration, long cooldown, double vulnerability) {
-        super(null, EFFECT_NAME, null, 500L, duration, null, null);
+    private final double baseBonusVulnerability;
+    public PoiseStunEffect(@Nullable Entity applierEntity, long duration, long cooldown, double vulnerability, double baseBonusVulnerability) {
+        super(null, EFFECT_NAME, null, 250L, duration, null, null);
         this.vulnerability = vulnerability;
         this.cooldown = cooldown;
         this.applierEntity = applierEntity;
+        this.baseBonusVulnerability = baseBonusVulnerability;
         this.types.add(EffectType.STUN);
         this.types.add(EffectType.HARMFUL);
         this.types.add(EffectType.PHYSICAL);
@@ -63,7 +70,6 @@ public class PoiseStunEffect extends PeriodicExpirableEffect {
         World world = entity.getWorld();
         Location location = entity.getEyeLocation();
         world.playSound(entity, Sound.ITEM_SHIELD_BREAK, SoundCategory.HOSTILE, 1.0F, 1.0F);
-        world.spawnParticle(Particle.CRIT, location, 20, 1, 1, 1);
         world.spawnParticle(Particle.VILLAGER_ANGRY, location.add(0.0, 0.2, 0.0), 1);
         if(applierEntity instanceof Player player) {
             player.playSound(entity, Sound.ENTITY_ARROW_HIT_PLAYER, 1.0F, 1.0F);
@@ -78,10 +84,16 @@ public class PoiseStunEffect extends PeriodicExpirableEffect {
     }
 
     @Override
+    public void remove(CharacterTemplate character) {
+        super.remove(character);
+        character.addEffect(new PoiseImmunityEffect(cooldown));
+    }
+
+    @Override
     public void tick(CharacterTemplate character) {
         super.tick(character);
         LivingEntity entity = character.getEntity();
-        entity.getWorld().spawnParticle(Particle.VILLAGER_ANGRY, entity.getEyeLocation().add(0, 0.2, 0), 1);
+        entity.getWorld().spawnParticle(Particle.VILLAGER_ANGRY, entity.getEyeLocation(), 2, 0.5, 0.5, 0.5);
         if(entity.isDead() || entity.getHealth() <= 0.0) {
             character.removeEffect(this);
         }
@@ -97,27 +109,11 @@ public class PoiseStunEffect extends PeriodicExpirableEffect {
 
     }
 
-    @Override
-    public void remove(CharacterTemplate character) {
-        super.remove(character);
-        character.addEffect(new PoiseImmunityEffect(cooldown));
-    }
-
     public static class Listener implements org.bukkit.event.Listener {
         private final CharacterManager characterManager = Heroes.getInstance().getCharacterManager();
         private final Properties settings;
         private Listener(Properties settings) {
             this.settings = settings;
-        }
-
-        @EventHandler(priority = EventPriority.LOWEST)
-        public void onDamageEvent(HeroesDamageEvent event) {
-            final Effect effect = event.getDefender().getEffect(EFFECT_NAME);
-            if(effect == null) return;
-            if(effect instanceof PoiseStunEffect poiseEffect) {
-                final double rawDamage = event.getDamage();
-                event.setDamage(rawDamage * (1.0 + Math.min(1.0, poiseEffect.vulnerability + (poiseEffect.bonusVulnerability.addAndGet(event.getDamage() * settings.bonusVulnerability)))));
-            }
         }
 
         @EventHandler
@@ -127,5 +123,38 @@ public class PoiseStunEffect extends PeriodicExpirableEffect {
                 event.setCancelled(true);
             }
         }
+    }
+
+    static {
+        /* Handler for when player has Poise Stun Effect and applying bonus damage. */
+        EventBus.subscribe(AttackEvent.class, EventPriority.HIGH, (event) -> {
+            final var character = Heroes.getInstance().getCharacterManager().getCharacter(event.getEntity());
+            final var effect = character.getEffect(PoiseStunEffect.EFFECT_NAME);
+            if(effect == null) return;
+            if(effect instanceof PoiseStunEffect pEffect) {
+                final var mod = pEffect.vulnerability + (pEffect.bonusVulnerability.addAndGet(event.getDamage().getDamage() * pEffect.baseBonusVulnerability));
+                event.getDamage().multiplicativeModifier(1.0 + Math.min(1.0, mod));
+            }
+        });
+
+        /* Event Handler for handling adding damage to the poise runner at the very end of a damage events life cycle.*/
+        EventBus.subscribe(AttackEvent.class, EventPriority.MONITOR, (event) -> {
+            final var metadata = event.getAttack();
+            // Todo need to check if projectiles (arrows are handled correctly by Mythic Lib and added to the stat provider properly)
+            // ** (probably is fine).
+            var impact = 0.0;
+            final var attackerStats = metadata.getAttacker();
+            if(attackerStats != null) {
+                impact = attackerStats.getStat(Stat.IMPACT.mmoKey());
+            }
+            var damage = 0.0;
+            for(DamagePacket packet : metadata.getDamage().getPackets()) {
+                damage += packet.getValue(); // Pre-mitigation values.
+            }
+            if(damage > 0.0 || impact > 0.0) {
+                final var rpg = ((KalentireWrapper) CombatEnhanced.getInstance().getModule(RPGHandler.class).getWrapper());
+                rpg.getPoiseRunner().handle(event.toBukkit(), damage, attackerStats == null ? null : attackerStats.getEntity(), impact);
+            }
+        });
     }
 }

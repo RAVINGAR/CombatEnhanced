@@ -1,7 +1,7 @@
 plugins {
     id 'java-library'
     id 'pmd'
-    id "com.github.johnrengelman.shadow" version "7.1.2"
+    id 'com.gradleup.shadow' version '8.3.0'
     id 'net.minecrell.plugin-yml.bukkit' version '0.5.3'
 }
 
@@ -68,12 +68,12 @@ repositories {
 
 dependencies {
     bukkitLibrary 'javax.vecmath:vecmath:1.5.2'
-    compileOnly 'io.papermc.paper:paper-api:1.20.1-R0.1-SNAPSHOT'
+    compileOnly 'io.papermc.paper:paper-api:1.20.2-R0.1-SNAPSHOT'
     compileOnly 'com.herocraftonline.heroes:Heroes:1.11.2-SNAPSHOT'
     compileOnly 'net.Indyuce:MMOItems-API:6.10.1-SNAPSHOT'
     compileOnly 'io.lumine:MythicLib-dist:1.7.1-SNAPSHOT'
     compileOnly 'com.comphenix.protocol:ProtocolLib:5.1.0'
-    compileOnly 'com.ravingarinc.kalentirerpg:Kalentire:1.20.1'
+    compileOnly 'com.ravingarinc.kalentirerpg:Kalentire:1.21.1-R4'
 
 
     bukkitLibrary 'org.jetbrains:annotations:23.1.0'
@@ -89,7 +89,7 @@ dependencies {
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0'
 }
 
-def targetJavaVersion = 17
+def targetJavaVersion = 21
 java {
     def javaVersion = JavaVersion.toVersion(targetJavaVersion)
     sourceCompatibility = javaVersion

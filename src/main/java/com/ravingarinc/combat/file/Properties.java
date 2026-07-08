@@ -61,6 +61,11 @@ public class Properties extends Module {
 
     public double vulnerabilityPerPoise = 0.02;
     public double bonusVulnerability = 0.005;
+    // Deflection
+
+    public double damageDeflectionRatio = 1.0;
+    public double recoveryDamageMultiplier = 1.25;
+    public double recoveryImpactMultiplier = 1.5;
 
     public Properties(final RavinPlugin plugin) {
         super(Properties.class, plugin);
@@ -122,6 +127,12 @@ public class Properties extends Module {
         })) {
             CombatEnhanced.log(Level.WARNING, "config.yml is missing `poise` section");
         };
+        if(consumeSection(section, "deflection", (child) -> {
+            wrap(() -> child.getDouble("deflection-window-damage-ratio")).ifPresent(b -> damageDeflectionRatio = b);
+            wrap(() -> child.getDouble("recovery-damage-multiplier")).ifPresent(b -> recoveryDamageMultiplier = b);
+            wrap(() -> child.getDouble("recovery-impact-multiplier")).ifPresent(b -> recoveryImpactMultiplier = b);
+
+        }));
     }
 
     private Optional<DamageCause> convertDamageCause(final String name) {

@@ -4,7 +4,7 @@ import com.herocraftonline.heroes.characters.Hero;
 import com.herocraftonline.heroes.characters.Monster;
 import com.herocraftonline.heroes.characters.effects.EffectType;
 import com.herocraftonline.heroes.characters.effects.PeriodicExpirableEffect;
-import com.ravingarinc.combat.compatibility.kalentire.KalentireWrapper;
+import com.ravingarinc.kalentirerpg.item.stats.Stat;
 import io.lumine.mythic.lib.api.item.NBTItem;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -20,9 +20,9 @@ public class AimingEffect extends PeriodicExpirableEffect {
 
     public AimingEffect(Player player, NBTItem mainHand) {
         super(null, "KalentireAimingEffect", player, 200,
-                1000L + (long) mainHand.getStat(KalentireWrapper.AIM_TIME) * 50L);
-        drawStamina = (int) mainHand.getStat(KalentireWrapper.DRAW_STAMINA) / 5;
-        aimStamina = (int) mainHand.getStat(KalentireWrapper.AIM_STAMINA) / 5;
+                1000L + (long) mainHand.getStat(Stat.AIM_TIME.mmoKey()) * 50L);
+        drawStamina = (int) mainHand.getStat(Stat.STAMINA_COST.mmoKey()) / 5;
+        aimStamina = (int) mainHand.getStat(Stat.AIM_COST.mmoKey()) / 5;
 
         addEffectTypes(EffectType.BENEFICIAL);
         addEffectTypes(EffectType.INTERNAL);
