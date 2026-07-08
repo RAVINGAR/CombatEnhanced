@@ -3,18 +3,23 @@ package com.ravingarinc.combat.combat.runner;
 import com.herocraftonline.heroes.Heroes;
 import com.herocraftonline.heroes.characters.CharacterTemplate;
 import com.ravingarinc.api.module.RavinPlugin;
+import com.ravingarinc.combat.CombatEnhanced;
 import com.ravingarinc.combat.api.BukkitApi;
 import com.ravingarinc.combat.character.CharacterEntity;
 import com.ravingarinc.combat.character.CharacterManager;
 import com.ravingarinc.combat.combat.event.DamageEvent;
+import com.ravingarinc.combat.compatibility.RPGHandler;
 import com.ravingarinc.combat.compatibility.kalentire.KalentireWrapper;
 import com.ravingarinc.combat.compatibility.kalentire.effect.PoiseImmunityEffect;
 import com.ravingarinc.combat.compatibility.kalentire.effect.PoiseStunEffect;
 import com.ravingarinc.combat.file.Properties;
+import com.ravingarinc.kalentirerpg.progression.event.EventBus;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 
@@ -114,5 +119,14 @@ public class PoiseRunner extends BukkitRunnable {
         if(set != null) {
             set.clear();
         }
+    }
+
+    static {
+        EventBus.subscribe(EntityDeathEvent.class, (event) -> getPoiseRunner().removeAll(event.getEntity().getUniqueId()));
+        EventBus.subscribe(PlayerQuitEvent.class, (event) -> getPoiseRunner().removeAll(event.getPlayer().getUniqueId()));
+    }
+
+    private static PoiseRunner getPoiseRunner() {
+        return ((KalentireWrapper) CombatEnhanced.getInstance().getModule(RPGHandler.class).getWrapper()).getPoiseRunner();
     }
 }

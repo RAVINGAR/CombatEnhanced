@@ -17,7 +17,7 @@ public class PerfectAimEffect extends PeriodicEffect {
     private final int aimStamina;
 
     public PerfectAimEffect(Player player, int aimStamina) {
-        super(null, "KalentirePerfectAimEffect", player, 200);
+        super(null, NAME, player, 200);
         this.aimStamina = aimStamina;
 
         addEffectTypes(EffectType.BENEFICIAL);

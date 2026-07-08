@@ -3,22 +3,31 @@ package com.ravingarinc.combat.compatibility.kalentire.bows;
 import com.herocraftonline.heroes.Heroes;
 import com.herocraftonline.heroes.nms.NMSHandler;
 import com.ravingarinc.api.I;
+import com.ravingarinc.combat.CombatEnhanced;
+import com.ravingarinc.combat.compatibility.RPGHandler;
 import com.ravingarinc.combat.compatibility.kalentire.KalentireWrapper;
 import com.ravingarinc.kalentirerpg.item.stats.Stat;
 import com.ravingarinc.kalentirerpg.item.stats.type.Arrow;
+import com.ravingarinc.kalentirerpg.progression.event.EventBus;
 import io.lumine.mythic.lib.MythicLib;
 import io.lumine.mythic.lib.api.item.NBTItem;
+import io.lumine.mythic.lib.api.player.EquipmentSlot;
+import io.lumine.mythic.lib.api.player.MMOPlayerData;
 import io.lumine.mythic.lib.player.PlayerMetadata;
 import org.bukkit.Location;
 import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -142,5 +151,83 @@ public class BowRunner extends BukkitRunnable {
     public synchronized void cancel() throws IllegalStateException {
         super.cancel();
         queue.add(() -> internalCancel.set(true));
+    }
+
+    private static final Random RANDOM = new Random(System.currentTimeMillis());
+    static {
+        EventBus.subscribe(EntityDamageByEntityEvent.class, (event) -> {
+            getBowRunner().handle(event);
+        });
+
+        EventBus.subscribe(EntityShootBowEvent.class, (event) -> {
+            final var consumed = event.getConsumable();
+            if(!(event.getEntity() instanceof Player player && consumed != null)) return;
+
+            final var category = ShootEvent.Category.matchCategory(event.getBow());
+            if(category == null) return;
+
+            final var bow = NBTItem.get(event.getBow());
+            if(!bow.hasType()) return;
+
+            final var consumable = NBTItem.get(consumed);
+            if(!consumable.hasType()) return;
+
+            final var statMap = MMOPlayerData.get(player).getStatMap().cache(EquipmentSlot.MAIN_HAND);
+            final var bowType = bow.getType();
+            final var hero =  Heroes.getInstance().getCharacterManager().getHero(player);
+            final var effect = (PerfectAimEffect) hero.getEffect(PerfectAimEffect.NAME);
+
+            double multiplier = event.getForce();
+            double sway = getStat(statMap, consumable, Stat.AIM_SWAY.mmoKey());
+            if(effect != null) {
+                multiplier += getStat(statMap, consumable, Stat.AIM_BONUS.mmoKey());
+                if (bowType.equalsIgnoreCase("GREATBOW") || bowType.equalsIgnoreCase("SIEGE_CROSSBOW")) {
+                    sway = 0.0;
+                } else {
+                    sway /= 2.0;
+                }
+            }
+            hero.tryRemoveEffect(AimingEffect.NAME);
+            hero.tryRemoveEffect(PerfectAimEffect.NAME);
+
+            getBowRunner().add(player.getUniqueId(), player.getLocation(), statMap,
+                    consumable, multiplier);
+
+            final var proj = event.getProjectile();
+            final var velocity = getStat(statMap, consumable, Stat.VELOCITY.mmoKey()) * multiplier;
+
+            proj.setVelocity(randomiseVelocity(proj.getVelocity(), sway, velocity));
+        });
+
+    }
+
+    private static BowRunner getBowRunner() {
+        return ((KalentireWrapper)CombatEnhanced.getInstance().getModule(RPGHandler.class).getWrapper()).getBowRunner();
+    }
+
+    /**
+     * Randomizes a velocity vector to create a "spread" effect.
+     *
+     * @param initialVelocity The starting velocity vector of the projectile.
+     * @param spreadFactor A value controlling the spread cone. 0 is no spread.
+     * Good values are typically between 0.05 and 0.5.
+     * @return A new velocity vector with a randomized direction.
+     */
+    private static Vector randomiseVelocity(Vector initialVelocity, double spreadFactor, double speed) {
+        // 1. Get the original speed and direction
+        Vector direction = initialVelocity.normalize();
+
+        // 2. & 3. Generate a random offset vector scaled by the spread factor
+        // Generates random values between -1 and 1
+        double offsetX = (RANDOM.nextDouble() * 2 - 1) * spreadFactor;
+        double offsetY = (RANDOM.nextDouble() * 2 - 1) * spreadFactor;
+        double offsetZ = (RANDOM.nextDouble() * 2 - 1) * spreadFactor;
+        Vector randomOffset = new Vector(offsetX, offsetY, offsetZ);
+
+        // 4. Combine the original direction with the random offset and re-normalize
+        Vector newDirection = direction.add(randomOffset).normalize();
+
+        // 5. Apply the original speed to the new direction
+        return newDirection.multiply(speed);
     }
 }
